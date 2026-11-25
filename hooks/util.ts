@@ -27,6 +27,7 @@ export type IO = {
   hookEnv(): Promise<Record<string, string | undefined>>
   storeGet(key: string): Promise<unknown>
   storeSet(key: string, value: unknown): Promise<void>
+  openPane(): void
   fetch(url: string, init?: { method?: string; headers?: Record<string, string>; body?: string }): Promise<{ status: number; ok: boolean; text: string }>
 }
 

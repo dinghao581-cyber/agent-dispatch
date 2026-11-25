@@ -147,3 +147,13 @@ test('设置页可以直接粘贴 DeepSeek Key', async ($, on) => {
     await ui.unmount()
   }
 })
+
+test('输入框上方的状态栏能画出来并带打开按钮', async ($, on) => {
+  seed(on, { tab: 'active', page: 0 })
+  for (const surface of ['desktop', 'terminal'] as const) {
+    const ui = await $.ui.mount({ plugin: 'agent-dispatch', component: 'AbovePrompt', requestId: 'band', props: {}, surface } as any)
+    expect(await ui.find({ key: 'open-panel' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /待审 1/ })).toBeDefined()
+    await ui.unmount()
+  }
+})

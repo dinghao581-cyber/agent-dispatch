@@ -1,6 +1,6 @@
 {
   "name": "agent-dispatch",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "派单器 / agent-dispatch: dispatch background agents (DeepSeek) from a Claude Code side panel; Claude can call it directly; shared NAS board, acceptance gate, bilingual UI.",
   "types": "./types/index.d.ts",
   "license": "Apache-2.0",

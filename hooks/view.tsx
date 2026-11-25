@@ -451,6 +451,25 @@ function renderSettings(el: any, width: number, s: Snapshot, st: Settings, a: Ac
       )}
 
       {section(
+        L('显示', 'Display'),
+        [
+          field(
+            L('输入框上方显示状态栏', 'Status line above the prompt'),
+            L('一行显示运行、排队、待审数量，带“打开面板”按钮，面板被关掉时从这里找回。', 'One line with running, queued and review counts and an Open panel button, to get the panel back after closing it.'),
+            pick('showBand', onOff(), st.showBand === false ? 'off' : 'on', v => v === 'on'),
+            'f-band',
+          ),
+          field(
+            L('需要时自动打开面板', 'Open the panel when needed'),
+            L('派单时、有工单等你验收时，自动打开右侧面板。', 'Open the side panel when tasks are created or one is waiting for your review.'),
+            pick('autoOpen', onOff(), st.autoOpen === false ? 'off' : 'on', v => v === 'on'),
+            'f-autoopen',
+          ),
+        ],
+        'sec-display',
+      )}
+
+      {section(
         L('任务板', 'Task board'),
         [
           field(
@@ -593,6 +612,28 @@ function renderSettings(el: any, width: number, s: Snapshot, st: Settings, a: Ac
         'sec-agents',
       )}
       <Text dimColor>{L('修改即时保存；任务板位置要等运行中的智能体结束后才能切换。', 'Changes save immediately; the board location can change only when no agent is running.')}</Text>
+    </Box>
+  )
+}
+
+/** 输入框上方的一行状态：派单器 · 运行 · 排队 · 待审 · [打开] */
+export function renderBand(el: any, s: Snapshot, open: () => void) {
+  const { Box, Text, Button } = el
+  if (s.lang) setLang(s.lang)
+  const active = count(s, ['running', 'testing'])
+  const queued = count(s, ['queued'])
+  const review = count(s, ['review'])
+  const issues = count(s, ['failed', 'interrupted'])
+  return (
+    <Box flexDirection="row" gap={1} alignItems="center">
+      <Text color={active ? 'claude' : 'inactive'}>●</Text>
+      <Text weight="medium">{L('派单器', 'Dispatcher')}</Text>
+      <Text dimColor>
+        {L(`运行 ${active}/${s.maxConcurrent} · 排队 ${queued}`, `running ${active}/${s.maxConcurrent} · queued ${queued}`)}
+      </Text>
+      {review > 0 && <Text color="warning">{L(`待审 ${review}`, `review ${review}`)}</Text>}
+      {issues > 0 && <Text color="error">{L(`异常 ${issues}`, `issues ${issues}`)}</Text>}
+      <Button key="open-panel" label={L('打开面板', 'Open panel')} plain onPress={open} />
     </Box>
   )
 }

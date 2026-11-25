@@ -98,6 +98,10 @@ export type Settings = {
   worktreeDir: string
   /** 界面语言：auto 跟随系统 */
   language: 'auto' | 'zh' | 'en'
+  /** 输入框上方显示一行派单器状态和“打开”按钮 */
+  showBand: boolean
+  /** 派单、有工单待审时自动打开右侧面板 */
+  autoOpen: boolean
 }
 
 export type Snapshot = {

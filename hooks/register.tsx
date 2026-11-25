@@ -7,7 +7,7 @@ import { L, resolveLang, setLang } from './i18n'
 import { DEFAULT_SETTINGS, Dispatcher, detailText, rowLine } from './runner'
 import type { CreateInput } from './runner'
 import { PROVIDERS } from './providers'
-import { renderPane } from './view'
+import { renderBand, renderPane } from './view'
 import type { Actions } from './view'
 import type { Detail, Settings, Snapshot, Tab, View } from '../types'
 
@@ -100,6 +100,7 @@ export const register: Register = on => {
       storeGet: key => $.store.get(key),
       storeSet: (key, value) => $.store.set(key, value as any),
       fetch: (url, init) => $.http.fetch(url, init),
+      openPane: () => void $.ui.open({ id: PANE, title: L('派单器', 'Dispatcher') }),
     }
     try {
       disp = await startDispatcher(io, e.cwd)
@@ -206,6 +207,8 @@ export const register: Register = on => {
           hotDays: { type: 'integer', minimum: 1, maximum: 30 },
           worktreeDir: { type: 'string', description: 'Folder for gate worktrees; must not be inside ~/.claude' },
           language: { type: 'string', enum: ['auto', 'zh', 'en'] },
+          showBand: { type: 'boolean' },
+          autoOpen: { type: 'boolean' },
         },
         required: ['action'],
       },
@@ -222,6 +225,8 @@ export const register: Register = on => {
   })
 
   on('session.end', async ($, e, next) => {
+    // 记下“正常关闭”：下次打开时，这次停掉的工单按用户的选择标为中断，不自动重跑
+    await $.store.set('cleanCloseAt', Date.now())
     timer?.cancel()
     await disp?.close()
     return next(e)
@@ -233,7 +238,23 @@ export const register: Register = on => {
       void disp.activate()
       if (e.surface === 'desktop' || e.viewport?.isFullscreen) void $.ui.open({ id: PANE, title: L('派单器', 'Dispatcher') })
     }
-    return next(e)
+    const s = await read($, snapshotAtom)
+    const settings = disp?.settings ?? FALLBACK_SETTINGS
+    if (!s || !settings.showBand || (e.props as any)?.hasSurvey) return next(e)
+    // 输入框上方的一行：随时看到进度，点“打开”回到面板
+    return renderBand($.ui.resolve(e), s, () => void $.ui.open({ id: PANE, title: L('派单器', 'Dispatcher'), focus: true }))
+  })
+
+  // 右键菜单里也能打开
+  on('ui.render', { component: 'ContextMenu' }, ($, e) => {
+    const { Box, Button, Text } = $.ui.resolve(e)
+    return (
+      <Box flexDirection="column">
+        <Button key="open-dispatch" onPress={() => void $.ui.open({ id: PANE, title: L('派单器', 'Dispatcher'), focus: true })}>
+          {L('打开派单器', 'Open dispatcher')} <Text dimColor>{L('右侧面板', 'side panel')}</Text>
+        </Button>
+      </Box>
+    )
   })
 
   on('command.run', { command: 'dispatch' }, async $ => {
@@ -250,6 +271,7 @@ export const register: Register = on => {
     // Claude 在本会话里用派单器，说明这是有人在用的会话：开始调度
     void disp.activate()
     const input = e as unknown as CreateInput & { tasks?: CreateInput[] }
+    if (disp.settings.autoOpen) void $.ui.open({ id: PANE, title: L('派单器', 'Dispatcher') })
     const list = Array.isArray(input.tasks) && input.tasks.length ? input.tasks : [input]
     const lines: string[] = []
     for (const one of list) {
@@ -352,6 +374,8 @@ export const register: Register = on => {
         'hotDays',
         'worktreeDir',
         'language',
+        'showBand',
+        'autoOpen',
       ] as const) {
         if (f[k] !== undefined) (patch as any)[k] = f[k]
       }

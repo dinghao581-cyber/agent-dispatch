@@ -64,6 +64,8 @@ export const DEFAULT_SETTINGS = (host: Host): Settings => ({
   hotDays: 3,
   worktreeDir: '~/.agent-dispatch/worktrees',
   language: 'auto',
+  showBand: true,
+  autoOpen: true,
 })
 
 export type CreateInput = {
@@ -131,8 +133,13 @@ export class Dispatcher {
     void this.tick()
   }
 
-  /** 上次会话没跑完的工单：客户端关闭时智能体一起停了，标为中断 */
+  /**
+   * 上次没跑完的工单：
+   * - 客户端正常关闭（session.end 记下了时间）→ 按用户的选择，标为中断，不自动重跑；
+   * - 扩展重新加载或进程意外退出（没有关闭记录）→ 自动重新派单，进度不丢。
+   */
   async markInterrupted(): Promise<void> {
+    const closedAt = Number((await this.io.storeGet('cleanCloseAt')) ?? 0)
     for (const row of [...this.board.hot.values()]) {
       if (row.status !== 'running' && row.status !== 'testing') continue
       if (this.runs.has(row.id)) continue
@@ -141,7 +148,13 @@ export class Dispatcher {
       if (!spec || !state || state.machine !== this.machine) continue
       state.status = 'interrupted'
       state.endedAt = Date.now()
-      this.pushEvent(state, L('客户端关闭或重载，智能体已随之停止', 'Client closed or reloaded; the agent stopped with it'))
+      const byReload = closedAt < state.startedAt
+      if (byReload && !spec.retryOf?.startsWith('auto:')) {
+        const again = await this.retry(row.id, true)
+        this.pushEvent(state, L(`扩展重新加载打断了它，已自动重新派单：${again.id}`, `Interrupted by an extension reload; queued again as ${again.id}`))
+      } else {
+        this.pushEvent(state, L('客户端关闭，智能体已随之停止', 'Client closed; the agent stopped with it'))
+      }
       await this.board.writeState(state, spec)
     }
     await this.board.flushHot()
@@ -529,6 +542,7 @@ export class Dispatcher {
     )
     if (to === 'user') {
       this.pushEvent(state, L('等待用户验收', 'Waiting for your review'))
+      if (this.settings.autoOpen) this.io.openPane()
       void this.io.toast(msg)
       void this.io.notify(msg, L('派单器 · 待验收', 'Dispatcher · review needed'))
     } else if (to === 'claude') {
@@ -706,7 +720,7 @@ export class Dispatcher {
     return L(`已驳回 ${id}，分支 ${state.branch} 保留备查`, `Rejected ${id}; branch ${state.branch} kept for reference`)
   }
 
-  async retry(id: string): Promise<TaskSpec> {
+  async retry(id: string, auto = false): Promise<TaskSpec> {
     const spec = await this.board.getSpec(id)
     if (!spec) throw new Error(L(`找不到工单 ${id}`, `Task ${id} not found`))
     return this.create({
@@ -722,7 +736,8 @@ export class Dispatcher {
       testCommand: spec.gate.testCommand,
       reviewTo: spec.reviewTo,
       maxTurns: spec.maxTurns,
-      retryOf: id,
+      // 自动重派只做一次：再被打断就停下来等人处理
+      retryOf: auto ? `auto:${id}` : id,
     })
   }
 
