@@ -96,6 +96,8 @@ export type Settings = {
   hotDays: number
   /** 验收闸门的 worktree 放哪；不能在 ~/.claude 下面（Claude Code 会把那里当敏感目录拦下修改） */
   worktreeDir: string
+  /** 界面语言：auto 跟随系统 */
+  language: 'auto' | 'zh' | 'en'
 }
 
 export type Snapshot = {
@@ -115,6 +117,8 @@ export type Snapshot = {
   warning?: string
   /** 本会话是否已接上界面、负责调度 */
   isActive: boolean
+  /** 当前界面语言；变了面板就重画 */
+  lang: 'zh' | 'en'
   refreshedAt: number
 }
 
@@ -147,6 +151,8 @@ declare module 'claude-code' {
       snapshot: Shaped<Snapshot | null>
       view: Shaped<View>
       detail: Shaped<Detail | null>
+      /** 本会话是否已在调度：重新加载后据此立即恢复，不用等界面重画 */
+      active: boolean
     }
   }
 }

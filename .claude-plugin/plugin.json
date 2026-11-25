@@ -1,7 +1,7 @@
 {
   "name": "agent-dispatch",
-  "version": "0.1.0",
-  "description": "派单器：在 Claude 客户端右侧面板调度 DeepSeek 等智能体，支持 NAS 共享任务板、验收闸门和 Claude 直接调用。",
+  "version": "0.2.0",
+  "description": "派单器 / agent-dispatch: dispatch background agents (DeepSeek) from a Claude Code side panel; Claude can call it directly; shared NAS board, acceptance gate, bilingual UI.",
   "types": "./types/index.d.ts",
   "license": "Apache-2.0",
   "keywords": [

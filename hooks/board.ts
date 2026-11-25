@@ -81,7 +81,7 @@ export class Board {
     if (!(await exists(this.io, readme))) {
       await this.io.write(
         readme,
-        '派单器任务板（agent-dispatch）。每个文件只由一台机器写入，请勿手工修改。\n',
+        '派单器任务板（agent-dispatch）。每个文件只由一台机器写入，请勿手工修改。\nagent-dispatch task board. Each file has a single writer machine; do not edit by hand.\n',
       )
     }
     const saved = await readJson<Row[]>(this.io, join(this.root, 'index', `${this.machine}.json`))

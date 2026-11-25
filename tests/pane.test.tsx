@@ -55,10 +55,10 @@ const SNAPSHOT = {
   refreshedAt: now,
 }
 
-function seed(on: any, view: unknown, detail: unknown = null) {
+function seed(on: any, view: unknown, detail: unknown = null, lang: 'zh' | 'en' = 'zh') {
   on('state.get', (_: unknown, e: any) => {
     const by: Record<string, unknown> = {
-      snapshot: { shape: 'snap-1', value: SNAPSHOT },
+      snapshot: { shape: 'snap-1', value: { ...SNAPSHOT, lang } },
       view: { shape: 'view-1', value: view },
       detail: { shape: 'detail-1', value: detail },
     }
@@ -116,4 +116,23 @@ test('图形化设置页在桌面和终端都画得出来', async ($, on) => {
     expect(await ui.find({ key: 'in-sharedDir' })).toBeDefined()
     await ui.unmount()
   }
+})
+
+test('切到英文后面板和设置页都是英文', async ($, on) => {
+  seed(on, { tab: 'active', page: 0 }, null, 'en')
+  for (const surface of ['desktop', 'terminal'] as const) {
+    const ui = await $.ui.mount({ ...PANE, surface })
+    expect(await ui.find({ type: 'Text', text: /Dispatcher/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Off-peak/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /低谷/ })).toBeUndefined()
+    await ui.unmount()
+  }
+})
+
+test('英文设置页有语言选项', async ($, on) => {
+  seed(on, { tab: 'active', page: 0, screen: 'settings' }, null, 'en')
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ key: 'sel-language' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Max agents at once/ })).toBeDefined()
+  await ui.unmount()
 })

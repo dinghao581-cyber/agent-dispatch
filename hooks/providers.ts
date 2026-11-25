@@ -2,6 +2,7 @@
 // 目前只开 DeepSeek Flash；GPT 与 Claude API 留好位置，等有 Key 再打开。
 import type { IO, Host } from './util'
 import { expandHome } from './util'
+import { L, getLang } from './i18n'
 import type { Settings } from '../types'
 
 export type Price = { hit: number; miss: number; out: number } // 美元 / 百万 Token（高峰价）
@@ -33,7 +34,7 @@ export const PROVIDERS: Provider[] = [
     enabled: false,
     peakAware: true,
     price: { hit: 0.044, miss: 1.32, out: 3.96 },
-    note: '已预留，按需在设置里打开',
+    note: 'reserved',
   },
   {
     id: 'claude-api',
@@ -41,7 +42,7 @@ export const PROVIDERS: Provider[] = [
     short: 'Claude',
     enabled: false,
     peakAware: false,
-    note: '接口已预留：需要 ANTHROPIC_API_KEY',
+    note: 'reserved: needs ANTHROPIC_API_KEY',
   },
   {
     id: 'openai-gpt',
@@ -49,9 +50,25 @@ export const PROVIDERS: Provider[] = [
     short: 'GPT',
     enabled: false,
     peakAware: false,
-    note: '接口已预留：需要 OpenAI Key 和 Codex CLI',
+    note: 'reserved: needs an OpenAI key and the Codex CLI',
   },
 ]
+
+/** 预留智能体的说明，按当前语言 */
+export function noteOf(p: Provider): string {
+  if (p.enabled) return L('可用', 'available')
+  const zh: Record<string, string> = {
+    'deepseek-v4-pro': '已预留，按需打开',
+    'claude-api': '接口已预留：需要 ANTHROPIC_API_KEY',
+    'openai-gpt': '接口已预留：需要 OpenAI Key 和 Codex CLI',
+  }
+  const en: Record<string, string> = {
+    'deepseek-v4-pro': 'reserved, enable when needed',
+    'claude-api': 'reserved: needs ANTHROPIC_API_KEY',
+    'openai-gpt': 'reserved: needs an OpenAI key and the Codex CLI',
+  }
+  return L(zh[p.id] ?? p.note ?? '未开放', en[p.id] ?? p.note ?? 'not available')
+}
 
 export function providerOf(id: string): Provider | undefined {
   return PROVIDERS.find(p => p.id === id)
@@ -118,11 +135,15 @@ export async function checkProvider(
   id: string,
 ): Promise<string | undefined> {
   const p = providerOf(id)
-  if (!p) return `未知的智能体：${id}`
-  if (!p.enabled) return `${p.label} 尚未开放（${p.note ?? '未配置'}）`
+  if (!p) return L(`未知的智能体：${id}`, `Unknown agent: ${id}`)
+  if (!p.enabled) return L(`${p.label} 尚未开放（${noteOf(p)}）`, `${p.label} is not available yet (${noteOf(p)})`)
   if (id.startsWith('deepseek')) {
     const env = await readEnvFile(io, expandHome(settings.deepseekEnvFile, host))
-    if (!env.DEEPSEEK_API_KEY) return `没找到 DeepSeek Key：请在 ${settings.deepseekEnvFile} 里填写 DEEPSEEK_API_KEY`
+    if (!env.DEEPSEEK_API_KEY)
+      return L(
+        `没找到 DeepSeek Key：请在 ${settings.deepseekEnvFile} 里填写 DEEPSEEK_API_KEY`,
+        `No DeepSeek key found: put DEEPSEEK_API_KEY=... in ${settings.deepseekEnvFile}`,
+      )
   }
   return undefined
 }
@@ -166,7 +187,10 @@ export async function buildLaunch(
       CLAUDE_CODE_SUBAGENT_MODEL: model,
     })
   }
-  const input = `${spec.prompt}\n\n---\n完成后请在回答的最后单独写一行，以“【摘要】”开头，用一句话（不超过 80 字）总结结果。`
+  const input =
+    getLang() === 'zh'
+      ? `${spec.prompt}\n\n---\n完成后请在回答的最后单独写一行，以“【摘要】”开头，用一句话（不超过 80 字）总结结果。`
+      : `${spec.prompt}\n\n---\nWhen you are done, end your answer with a line of its own starting with "SUMMARY:" that sums up the result in one sentence (under 25 words).`
   return { argv, env, input }
 }
 
@@ -243,14 +267,16 @@ export function parseStreamLine(line: string, seen: Set<string>): StreamUpdate |
 }
 
 export function extractSummary(text: string): string {
-  const m = /【摘要】\s*(.+)/.exec(text)
+  const m = /(?:【摘要】|SUMMARY:)\s*(.+)/i.exec(text)
   if (m?.[1]) return m[1].trim().slice(0, 160)
   const s = text.replace(/\s+/g, ' ').trim()
   return s.length > 120 ? `${s.slice(0, 119)}…` : s
 }
 
 export function extractVerdict(text: string): 'approved' | 'rejected' | undefined {
-  const m = /【结论】\s*(不通过|通过)/.exec(text)
-  if (!m) return undefined
-  return m[1] === '通过' ? 'approved' : 'rejected'
+  const zh = /【结论】\s*(不通过|通过)/.exec(text)
+  if (zh) return zh[1] === '通过' ? 'approved' : 'rejected'
+  const en = /VERDICT:\s*(PASS|FAIL)/i.exec(text)
+  if (en?.[1]) return en[1].toUpperCase() === 'PASS' ? 'approved' : 'rejected'
+  return undefined
 }

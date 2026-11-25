@@ -3,6 +3,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 import type { IO } from './util'
 import { detectHost } from './util'
+import { L, resolveLang, setLang } from './i18n'
 import { DEFAULT_SETTINGS, Dispatcher, detailText, rowLine } from './runner'
 import type { CreateInput } from './runner'
 import { PROVIDERS } from './providers'
@@ -14,6 +15,7 @@ const PANE = 'dispatch'
 
 const snapshotAtom = atom({ plugin: 'agent-dispatch', key: 'snapshot' } as const, null as Snapshot | null, { shape: 'snap-1' })
 const viewAtom = atom({ plugin: 'agent-dispatch', key: 'view' } as const, { tab: 'active', page: 0 } as View, { shape: 'view-1' })
+const activeAtom = atom({ plugin: 'agent-dispatch', key: 'active' } as const, false)
 const detailAtom = atom({ plugin: 'agent-dispatch', key: 'detail' } as const, null as Detail | null, { shape: 'detail-1' })
 
 let disp: Dispatcher | undefined
@@ -30,43 +32,46 @@ async function startDispatcher(adapter: IO, cwd: string): Promise<Dispatcher> {
   const host = await detectHost(adapter)
   const saved = (await adapter.storeGet('settings')) as Partial<Settings> | undefined
   const settings = { ...DEFAULT_SETTINGS(host), ...(saved ?? {}) }
+  setLang(await resolveLang(adapter, host, settings.language))
   const d = new Dispatcher(adapter, host, settings, cwd)
   await d.open()
   return d
 }
 
 const ok = (text: string) => ({ result: text })
-const fail = (text: string) => ({ result: `出错：${text}` })
+const fail = (text: string) => ({ result: `${L('出错：', 'Error: ')}${text}` })
 
 const createSchema = {
   type: 'object',
   properties: {
-    title: { type: 'string', description: '工单标题，一句话' },
+    title: { type: 'string', description: 'Task title, one line' },
     prompt: {
       type: 'string',
-      description: '交给智能体的完整任务说明。智能体看不到当前对话：写清背景、文件路径、要做什么、怎样算完成。',
+      description:
+        'Full instructions for the agent. The agent cannot see this conversation: state the background, file paths, what to do and what counts as done.',
     },
     provider: {
       type: 'string',
       enum: PROVIDERS.map(p => p.id),
-      description: `用哪个智能体，默认 deepseek-flash。可用：${PROVIDERS.filter(p => p.enabled).map(p => p.id).join(', ')}`,
+      description: `Which agent runs it; default deepseek-flash. Available: ${PROVIDERS.filter(p => p.enabled).map(p => p.id).join(', ')}`,
     },
-    mode: { type: 'string', enum: ['read', 'edit'], description: 'read 只读（默认）；edit 可改文件、跑命令' },
-    cwd: { type: 'string', description: '工作目录，默认当前会话目录' },
-    target: { type: 'string', description: "'any' 任意机器认领，或指定机器名" },
-    priority: { type: 'integer', minimum: 1, maximum: 5, description: '1 最高，默认 3' },
+    mode: { type: 'string', enum: ['read', 'edit'], description: 'read: read only (default); edit: may edit files and run commands' },
+    cwd: { type: 'string', description: "Working directory; defaults to this session's" },
+    target: { type: 'string', description: "'any' (any machine may claim it) or a machine name" },
+    priority: { type: 'integer', minimum: 1, maximum: 5, description: '1 is highest; default 3' },
     tags: { type: 'array', items: { type: 'string' } },
-    worktree: { type: 'boolean', description: '验收闸门：在独立 Git 分支/worktree 里干活，完成后走验收再合并' },
-    testCommand: { type: 'string', description: '验收测试命令（在 worktree 里执行，退出码 0 才算通过）' },
+    worktree: { type: 'boolean', description: 'Acceptance gate: work on an own Git branch/worktree, then test and review before merging' },
+    testCommand: { type: 'string', description: 'Acceptance test command, run in the worktree; exit code 0 passes' },
     reviewTo: {
       type: 'string',
       enum: ['user', 'claude', 'agent', 'none'],
-      description: '通过测试后的合并请求交给谁：user 用户在面板批准；claude 交给当前 Claude 会话；agent 交给审查智能体；none 只保留分支',
+      description:
+        'Who decides the merge after tests pass: user (approve in the panel), claude (this Claude session is notified), agent (a reviewer agent), none (keep the branch only)',
     },
-    maxTurns: { type: 'integer', description: '最多对话轮数（可选）' },
+    maxTurns: { type: 'integer', description: 'Maximum turns (optional)' },
     tasks: {
       type: 'array',
-      description: '批量派单：每项字段同上（title、prompt 必填）。给了 tasks 就忽略顶层字段。',
+      description: 'Create several tasks at once: each item has the fields above (title and prompt required). When given, top-level fields are ignored.',
       items: { type: 'object' },
     },
   },
@@ -97,9 +102,16 @@ export const register: Register = on => {
     }
     try {
       disp = await startDispatcher(io, e.cwd)
+      let remembered = false
       disp.onSnapshot = async s => {
         await update($, snapshotAtom, () => s)
+        if (s.isActive && !remembered) {
+          remembered = true
+          await update($, activeAtom, () => true)
+        }
       }
+      // 扩展重新加载：本会话之前已在调度，就直接接着调度
+      if (await read($, activeAtom)) void disp.activate()
       disp.onDetailTick = async () => {
         const v = await read($, viewAtom)
         if (!v.selected || !disp) return
@@ -109,27 +121,27 @@ export const register: Register = on => {
       markReady()
     } catch (err) {
       markReady()
-      void $.ui.toast(`派单器启动失败：${err instanceof Error ? err.message : String(err)}`)
+      void $.ui.toast(`${L('派单器启动失败：', 'Dispatcher failed to start: ')}${err instanceof Error ? err.message : String(err)}`)
       return started
     }
 
     await $.tool.register({
       name: 'dispatch_create',
       description:
-        '派单器：创建一张或多张工单，交给后台智能体（默认 DeepSeek Flash）执行。返回工单号。智能体在右侧面板显示状态与进度。适合规格明确、可独立完成的批量活。',
+        'Dispatcher: create one or more tasks for background agents (DeepSeek Flash by default). Returns task ids; status and progress show in the side panel. Best for well-specified work that can be done independently.',
       inputSchema: createSchema,
       isDeferred: false,
     })
     await $.tool.register({
       name: 'dispatch_overview',
-      description: '派单器总览：各状态数量、运行中的智能体、需要处理的工单、今日费用。先用它看全局，再按需查询。',
+      description: 'Dispatcher overview: counts by status, running agents, tasks needing attention, cost today. Start here, then query as needed.',
       inputSchema: { type: 'object', properties: {} },
       isDeferred: false,
     })
     await $.tool.register({
       name: 'dispatch_list',
       description:
-        '派单器分页查询工单（热层 + 按月归档），不会一次返回全部。status 可为 active/queued/running/testing/review/done/failed/stopped/rejected/interrupted；text 按标题/摘要/工单号搜索；cursor 用上次返回的 next。',
+        'Dispatcher: paged task query (hot index plus monthly archives), never everything at once. status: active/queued/running/testing/review/done/failed/stopped/rejected/interrupted; text searches title, summary and id; cursor is the next value from the previous page.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -146,7 +158,7 @@ export const register: Register = on => {
     await $.tool.register({
       name: 'dispatch_get',
       description:
-        '派单器：查看单张工单。part=summary（默认，状态+摘要+最近进展）、result（智能体的最终回答）、full（完整结果）、events（全部进展）、log（原始输出尾部）、prompt（任务内容）。',
+        "Dispatcher: read one task. part=summary (default: status, summary, recent progress), result (the agent's final answer), full (whole result), events (all progress), log (raw output tail), prompt (the task).",
       inputSchema: {
         type: 'object',
         properties: {
@@ -160,13 +172,13 @@ export const register: Register = on => {
     await $.tool.register({
       name: 'dispatch_control',
       description:
-        '派单器：操作工单。stop 停止运行；cancel 取消排队；retry 重新派单；approve 批准待审工单并合并分支；reject 驳回待审工单。工单在别的机器上时会自动转发请求。',
+        'Dispatcher: act on a task. stop a running task; cancel a queued one; retry as a new task; approve a task in review (merges its branch); reject it. Requests for tasks on another machine are forwarded.',
       inputSchema: {
         type: 'object',
         properties: {
           id: { type: 'string' },
           action: { type: 'string', enum: ['stop', 'cancel', 'retry', 'approve', 'reject'] },
-          note: { type: 'string', description: '批准/驳回的理由' },
+          note: { type: 'string', description: 'Reason for approving or rejecting' },
         },
         required: ['id', 'action'],
       },
@@ -175,7 +187,7 @@ export const register: Register = on => {
     await $.tool.register({
       name: 'dispatch_settings',
       description:
-        '派单器设置：action=get 查看；action=set 修改。字段：mode(shared/local)、sharedDir、localDir、maxConcurrent、offPeakOnly、defaultWorktree、defaultReviewTo(user/claude/agent/none)、deepseekEnvFile、claudePath、machineName、hotDays、worktreeDir。',
+        'Dispatcher settings: action=get to read, action=set to change. Fields: language (auto/zh/en), mode (shared/local), sharedDir, localDir, maxConcurrent, offPeakOnly, defaultWorktree, defaultReviewTo (user/claude/agent/none), deepseekEnvFile, claudePath, machineName, hotDays, worktreeDir.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -191,12 +203,13 @@ export const register: Register = on => {
           claudePath: { type: 'string' },
           machineName: { type: 'string' },
           hotDays: { type: 'integer', minimum: 1, maximum: 30 },
-          worktreeDir: { type: 'string', description: '验收闸门 worktree 目录，不能放在 ~/.claude 下' },
+          worktreeDir: { type: 'string', description: 'Folder for gate worktrees; must not be inside ~/.claude' },
+          language: { type: 'string', enum: ['auto', 'zh', 'en'] },
         },
         required: ['action'],
       },
     })
-    await $.command.register({ name: 'dispatch', description: '打开派单器面板' })
+    await $.command.register({ name: 'dispatch', description: 'Open the dispatcher panel / 打开派单器面板' })
 
     timer?.cancel()
     timer = $.clock.every(3000, () => {
@@ -217,50 +230,62 @@ export const register: Register = on => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (disp && !disp.active) {
       void disp.activate()
-      if (e.surface === 'desktop' || e.viewport?.isFullscreen) void $.ui.open({ id: PANE, title: '派单器' })
+      if (e.surface === 'desktop' || e.viewport?.isFullscreen) void $.ui.open({ id: PANE, title: L('派单器', 'Dispatcher') })
     }
     return next(e)
   })
 
   on('command.run', { command: 'dispatch' }, async $ => {
     void disp?.activate()
-    await $.ui.open({ id: PANE, title: '派单器' })
-    return { text: '派单器面板已打开。' }
+    await $.ui.open({ id: PANE, title: L('派单器', 'Dispatcher') })
+    return { text: L('派单器面板已打开。', 'Dispatcher panel opened.') }
   })
 
   // ---------- Claude 可调用的工具 ----------
 
   on('tool.run', { tool: 'mcp__agent-dispatch__dispatch_create' }, async ($, e) => {
     if (!disp) await Promise.race([ready, $.clock.sleep(15000)])
-    if (!disp) return fail('派单器没有启动')
+    if (!disp) return fail(L('派单器没有启动', 'The dispatcher is not running'))
+    // Claude 在本会话里用派单器，说明这是有人在用的会话：开始调度
+    void disp.activate()
     const input = e as unknown as CreateInput & { tasks?: CreateInput[] }
     const list = Array.isArray(input.tasks) && input.tasks.length ? input.tasks : [input]
     const lines: string[] = []
     for (const one of list) {
       try {
         const spec = await disp.create(one)
-        lines.push(`${spec.id} · ${spec.title} · ${spec.provider} · ${spec.mode === 'edit' ? '可改文件' : '只读'}${spec.gate.worktree ? ` · 闸门开（验收交给 ${spec.reviewTo}）` : ''}`)
+        lines.push(
+          `${spec.id} · ${spec.title} · ${spec.provider} · ${spec.mode === 'edit' ? L('可改文件', 'can edit') : L('只读', 'read only')}${spec.gate.worktree ? L(` · 闸门开（验收交给 ${spec.reviewTo}）`, ` · gate on (review by ${spec.reviewTo})`) : ''}`,
+        )
       } catch (err) {
-        lines.push(`未创建「${one.title ?? '?'}」：${err instanceof Error ? err.message : String(err)}`)
+        lines.push(L(`未创建「${one.title ?? '?'}」：`, `Not created "${one.title ?? '?'}": `) + (err instanceof Error ? err.message : String(err)))
       }
     }
     const s = disp.snapshot()
     return ok(
-      `已派单 ${lines.filter(l => l.startsWith('T')).length} 张：\n${lines.join('\n')}\n\n` +
-        `当前运行 ${s.running}/${s.maxConcurrent}${s.offPeakOnly && s.isPeak ? '；现在是 DeepSeek 高峰时段，排队到低谷再开' : ''}。进度看右侧面板，或用 dispatch_get。`,
+      L(`已派单 ${lines.filter(l => l.startsWith('T')).length} 张：`, `Created ${lines.filter(l => l.startsWith('T')).length} task(s):`) +
+        `\n${lines.join('\n')}\n\n` +
+        L(
+          `当前运行 ${s.running}/${s.maxConcurrent}${s.offPeakOnly && s.isPeak ? '；现在是 DeepSeek 高峰时段，排队到低谷再开' : ''}。进度看右侧面板，或用 dispatch_get。`,
+          `Running ${s.running}/${s.maxConcurrent}${s.offPeakOnly && s.isPeak ? '; DeepSeek peak hours now, queued until off-peak' : ''}. Watch the side panel or use dispatch_get.`,
+        ),
     )
   })
 
   on('tool.run', { tool: 'mcp__agent-dispatch__dispatch_overview' }, async ($) => {
     if (!disp) await Promise.race([ready, $.clock.sleep(15000)])
-    if (!disp) return fail('派单器没有启动')
+    if (!disp) return fail(L('派单器没有启动', 'The dispatcher is not running'))
+    // Claude 在本会话里用派单器，说明这是有人在用的会话：开始调度
+    void disp.activate()
     await disp.tick()
     return ok(disp.overviewText())
   })
 
   on('tool.run', { tool: 'mcp__agent-dispatch__dispatch_list' }, async ($, e) => {
     if (!disp) await Promise.race([ready, $.clock.sleep(15000)])
-    if (!disp) return fail('派单器没有启动')
+    if (!disp) return fail(L('派单器没有启动', 'The dispatcher is not running'))
+    // Claude 在本会话里用派单器，说明这是有人在用的会话：开始调度
+    void disp.activate()
     const f = e as any
     const { rows, next } = await disp.query({
       status: f.status,
@@ -270,28 +295,32 @@ export const register: Register = on => {
       limit: f.limit,
       cursor: f.cursor,
     })
-    if (!rows.length) return ok('没有符合条件的工单。')
-    return ok(`${rows.map(rowLine).join('\n')}${next !== undefined ? `\n\n还有更多：cursor=${next}` : '\n\n（已到末尾）'}`)
+    if (!rows.length) return ok(L('没有符合条件的工单。', 'No matching tasks.'))
+    return ok(`${rows.map(rowLine).join('\n')}${next !== undefined ? `\n\n${L('还有更多：', 'More: ')}cursor=${next}` : `\n\n${L('（已到末尾）', '(end)')}`}`)
   })
 
   on('tool.run', { tool: 'mcp__agent-dispatch__dispatch_get' }, async ($, e) => {
     if (!disp) await Promise.race([ready, $.clock.sleep(15000)])
-    if (!disp) return fail('派单器没有启动')
+    if (!disp) return fail(L('派单器没有启动', 'The dispatcher is not running'))
+    // Claude 在本会话里用派单器，说明这是有人在用的会话：开始调度
+    void disp.activate()
     const f = e as any
     const d = await disp.detail(String(f.id ?? ''))
-    if (!d) return fail(`找不到工单 ${f.id}`)
+    if (!d) return fail(L(`找不到工单 ${f.id}`, `Task ${f.id} not found`))
     return ok(detailText(d, f.part ?? 'summary'))
   })
 
   on('tool.run', { tool: 'mcp__agent-dispatch__dispatch_control' }, async ($, e) => {
     if (!disp) await Promise.race([ready, $.clock.sleep(15000)])
-    if (!disp) return fail('派单器没有启动')
+    if (!disp) return fail(L('派单器没有启动', 'The dispatcher is not running'))
+    // Claude 在本会话里用派单器，说明这是有人在用的会话：开始调度
+    void disp.activate()
     const f = e as any
     const id = String(f.id ?? '')
     try {
       if (f.action === 'retry') {
         const spec = await disp.retry(id)
-        return ok(`已重新派单：${spec.id}`)
+        return ok(L(`已重新派单：${spec.id}`, `Created again as ${spec.id}`))
       }
       return ok(await disp.control(id, f.action, 'Claude', f.note))
     } catch (err) {
@@ -301,7 +330,9 @@ export const register: Register = on => {
 
   on('tool.run', { tool: 'mcp__agent-dispatch__dispatch_settings' }, async ($, e) => {
     if (!disp) await Promise.race([ready, $.clock.sleep(15000)])
-    if (!disp) return fail('派单器没有启动')
+    if (!disp) return fail(L('派单器没有启动', 'The dispatcher is not running'))
+    // Claude 在本会话里用派单器，说明这是有人在用的会话：开始调度
+    void disp.activate()
     const f = e as any
     if (f.action === 'set') {
       const patch: Partial<Settings> = {}
@@ -318,6 +349,7 @@ export const register: Register = on => {
         'machineName',
         'hotDays',
         'worktreeDir',
+        'language',
       ] as const) {
         if (f[k] !== undefined) (patch as any)[k] = f[k]
       }
@@ -328,7 +360,7 @@ export const register: Register = on => {
     return ok(
       Object.entries(s)
         .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
-        .join('\n') + `\n任务板目录：${disp.boardDir}`,
+        .join('\n') + `\n${L('任务板目录：', 'Board folder: ')}${disp.boardDir}`,
     )
   })
 
@@ -342,7 +374,7 @@ export const register: Register = on => {
     const d = await read($, detailAtom)
     const say = (t: string) => void $.ui.toast(t)
     const act = (fn: () => Promise<string>) => () => {
-      void fn().then(say, err => say(`出错：${err instanceof Error ? err.message : String(err)}`))
+      void fn().then(say, err => say(`${L('出错：', 'Error: ')}${err instanceof Error ? err.message : String(err)}`))
     }
     const actions: Actions = {
       setTab: (tab: Tab) => void update($, viewAtom, cur => ({ ...cur, tab, page: 0, selected: undefined })),
@@ -356,21 +388,21 @@ export const register: Register = on => {
         })()
       },
       back: () => void update($, viewAtom, cur => ({ ...cur, selected: undefined })),
-      stop: id => act(async () => (disp ? disp.control(id, 'stop', '用户') : '派单器没有启动'))(),
-      cancel: id => act(async () => (disp ? disp.control(id, 'cancel', '用户') : '派单器没有启动'))(),
-      approve: id => act(async () => (disp ? disp.control(id, 'approve', '用户') : '派单器没有启动'))(),
-      reject: id => act(async () => (disp ? disp.control(id, 'reject', '用户') : '派单器没有启动'))(),
+      stop: id => act(async () => (disp ? disp.control(id, 'stop', L('用户', 'you')) : L('派单器没有启动', 'The dispatcher is not running')))(),
+      cancel: id => act(async () => (disp ? disp.control(id, 'cancel', L('用户', 'you')) : L('派单器没有启动', 'The dispatcher is not running')))(),
+      approve: id => act(async () => (disp ? disp.control(id, 'approve', L('用户', 'you')) : L('派单器没有启动', 'The dispatcher is not running')))(),
+      reject: id => act(async () => (disp ? disp.control(id, 'reject', L('用户', 'you')) : L('派单器没有启动', 'The dispatcher is not running')))(),
       retry: id =>
         act(async () => {
-          if (!disp) return '派单器没有启动'
+          if (!disp) return L('派单器没有启动', 'The dispatcher is not running')
           const spec = await disp.retry(id)
-          return `已重新派单：${spec.id}`
+          return L(`已重新派单：${spec.id}`, `Created again as ${spec.id}`)
         })(),
       refresh: () => void disp?.tick(),
       openSettings: () => void update($, viewAtom, (cur): View => ({ ...cur, screen: 'settings', selected: undefined })),
       closeSettings: () => void update($, viewAtom, (cur): View => ({ ...cur, screen: 'list' })),
       setSetting: (key, value) =>
-        act(async () => (await applySettings({ [key]: value } as Partial<Settings>)) ?? '已保存')(),
+        act(async () => (await applySettings({ [key]: value } as Partial<Settings>)) ?? L('已保存', 'Saved'))(),
     }
     return renderPane(el, (e as any).props, s, v, d, actions, disp?.settings ?? FALLBACK_SETTINGS)
   })
@@ -378,17 +410,20 @@ export const register: Register = on => {
 
 /** 改设置；换任务板需要先停下正在跑的智能体 */
 async function applySettings(patch: Partial<Settings>): Promise<string | undefined> {
-  if (!disp || !io) return '派单器没有启动'
+  if (!disp || !io) return L('派单器没有启动', 'The dispatcher is not running')
   const next = { ...disp.settings, ...patch }
-  if (next.mode === 'shared' && !next.sharedDir.trim()) return '请先在设置里填写共享任务板目录（例如 NAS 上的文件夹）'
-  if (!Number.isFinite(next.maxConcurrent) || next.maxConcurrent < 1) return '同时运行上限至少为 1'
-  if (/(^|[\\/])\.claude([\\/]|$)/.test(next.worktreeDir)) return 'worktree 目录不能放在 .claude 文件夹里：Claude Code 会拦下智能体对那里的修改'
+  if (next.mode === 'shared' && !next.sharedDir.trim())
+    return L('请先在设置里填写共享任务板目录（例如 NAS 上的文件夹）', 'Set the shared board folder first (for example a folder on your NAS)')
+  if (!Number.isFinite(next.maxConcurrent) || next.maxConcurrent < 1) return L('同时运行上限至少为 1', 'Max agents must be at least 1')
+  if (/(^|[\\/])\.claude([\\/]|$)/.test(next.worktreeDir))
+    return L('worktree 目录不能放在 .claude 文件夹里：Claude Code 会拦下智能体对那里的修改', 'The worktree folder cannot be inside a .claude folder: Claude Code blocks edits there')
   const boardChanged =
     next.mode !== disp.settings.mode ||
     next.sharedDir !== disp.settings.sharedDir ||
     next.localDir !== disp.settings.localDir ||
     next.machineName !== disp.settings.machineName
-  if (boardChanged && disp.runs.size > 0) return `还有 ${disp.runs.size} 个智能体在运行，等它们结束或先停止，再切换任务板`
+  if (boardChanged && disp.runs.size > 0)
+    return L(`还有 ${disp.runs.size} 个智能体在运行，等它们结束或先停止，再切换任务板`, `${disp.runs.size} agent(s) still running; wait or stop them before switching boards`)
   if (boardChanged) {
     const fresh = new Dispatcher(io, disp.host, next, disp.sessionCwd)
     fresh.onSnapshot = disp.onSnapshot
@@ -396,7 +431,7 @@ async function applySettings(patch: Partial<Settings>): Promise<string | undefin
     try {
       await fresh.open()
     } catch (err) {
-      return `打不开任务板 ${fresh.boardDir}：${err instanceof Error ? err.message : String(err)}`
+      return L(`打不开任务板 ${fresh.boardDir}：`, `Cannot open board ${fresh.boardDir}: `) + (err instanceof Error ? err.message : String(err))
     }
     const wasActive = disp.active
     await disp.close()
@@ -406,6 +441,7 @@ async function applySettings(patch: Partial<Settings>): Promise<string | undefin
     disp.settings = next
   }
   await io.storeSet('settings', next)
+  if (patch.language !== undefined) setLang(await resolveLang(io, disp.host, next.language))
   void disp.tick()
   return undefined
 }
