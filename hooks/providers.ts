@@ -165,6 +165,8 @@ export async function buildLaunch(
     tools,
   ]
   if (spec.mode === 'edit') argv.push('--permission-mode', 'acceptEdits')
+  // 智能体自己也是 Claude Code：不让它再加载一份派单器（否则每个智能体都会去读任务板）
+  argv.push('--settings', JSON.stringify({ enabledPlugins: { 'agent-dispatch@agent-dispatch': false } }))
   if (spec.maxTurns && spec.maxTurns > 0) argv.push('--max-turns', String(spec.maxTurns))
 
   const env: Record<string, string> = { AGENT_DISPATCH_CHILD: '1' }
