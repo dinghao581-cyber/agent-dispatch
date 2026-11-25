@@ -27,6 +27,10 @@ import {
   isPeak,
   parseStreamLine,
   providerOf,
+  readEnvFile,
+  maskKey,
+  writeDeepseekKey,
+  testDeepseek,
 } from './providers'
 import type { Detail, ReviewTo, Row, Settings, Snapshot, TaskSpec, TaskState } from '../types'
 
@@ -85,6 +89,7 @@ export class Dispatcher {
   /** 有界面的会话才调度；无头子进程（claude -p）只会加载、不会认领工单 */
   active = false
   warning?: string
+  keyHint?: string
   lastWarnCheck = 0
   runs = new Map<string, Run>()
   queueRows: Row[] = []
@@ -155,6 +160,24 @@ export class Dispatcher {
     this.isOwner = false
   }
 
+  async refreshKeyStatus(): Promise<void> {
+    this.warning = await checkProvider(this.io, this.host, this.settings, 'deepseek-flash')
+    const env = await readEnvFile(this.io, expandHome(this.settings.deepseekEnvFile, this.host))
+    this.keyHint = env.DEEPSEEK_API_KEY ? maskKey(env.DEEPSEEK_API_KEY) : undefined
+  }
+
+  async saveDeepseekKey(raw: string): Promise<string> {
+    const hint = await writeDeepseekKey(this.io, this.host, this.settings, raw)
+    await this.refreshKeyStatus()
+    void this.tick()
+    const test = await testDeepseek(this.io, this.host, this.settings)
+    return L(`已保存 Key（${hint}）。${test}`, `Key saved (${hint}). ${test}`)
+  }
+
+  async testDeepseek(): Promise<string> {
+    return testDeepseek(this.io, this.host, this.settings)
+  }
+
   pushEvent(state: TaskState, text: string): void {
     state.events.push({ t: Date.now(), text })
     if (state.events.length > MAX_EVENTS) state.events.splice(0, state.events.length - MAX_EVENTS)
@@ -201,7 +224,7 @@ export class Dispatcher {
       this.isOwner = this.active ? await this.board.tryLock(this.host.sessionId) : false
       if (Date.now() - this.lastWarnCheck > 30000) {
         this.lastWarnCheck = Date.now()
-        this.warning = await checkProvider(this.io, this.host, this.settings, 'deepseek-flash')
+        await this.refreshKeyStatus()
       }
       if (this.isOwner) {
         for (const c of await this.board.takeControls()) await this.applyControl(c)
@@ -745,6 +768,7 @@ export class Dispatcher {
       rows: rows.slice(0, 400),
       error: this.lastError,
       warning: this.warning,
+      keyHint: this.keyHint,
       isActive: this.active,
       lang: getLang(),
       refreshedAt: Date.now(),

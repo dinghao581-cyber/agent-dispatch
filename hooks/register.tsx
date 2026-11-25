@@ -99,6 +99,7 @@ export const register: Register = on => {
       hookEnv: () => $.process.hookEnv(),
       storeGet: key => $.store.get(key),
       storeSet: (key, value) => $.store.set(key, value as any),
+      fetch: (url, init) => $.http.fetch(url, init),
     }
     try {
       disp = await startDispatcher(io, e.cwd)
@@ -187,11 +188,11 @@ export const register: Register = on => {
     await $.tool.register({
       name: 'dispatch_settings',
       description:
-        'Dispatcher settings: action=get to read, action=set to change. Fields: language (auto/zh/en), mode (shared/local), sharedDir, localDir, maxConcurrent, offPeakOnly, defaultWorktree, defaultReviewTo (user/claude/agent/none), deepseekEnvFile, claudePath, machineName, hotDays, worktreeDir.',
+        'Dispatcher settings: action=get to read, action=set to change, action=test to check the DeepSeek key (shows the balance). The key itself is entered by the user in the panel, never through this tool. Fields: language (auto/zh/en), mode (shared/local), sharedDir, localDir, maxConcurrent, offPeakOnly, defaultWorktree, defaultReviewTo (user/claude/agent/none), deepseekEnvFile, claudePath, machineName, hotDays, worktreeDir.',
       inputSchema: {
         type: 'object',
         properties: {
-          action: { type: 'string', enum: ['get', 'set'] },
+          action: { type: 'string', enum: ['get', 'set', 'test'] },
           mode: { type: 'string', enum: ['shared', 'local'] },
           sharedDir: { type: 'string' },
           localDir: { type: 'string' },
@@ -334,6 +335,7 @@ export const register: Register = on => {
     // Claude 在本会话里用派单器，说明这是有人在用的会话：开始调度
     void disp.activate()
     const f = e as any
+    if (f.action === 'test') return ok(await disp.testDeepseek())
     if (f.action === 'set') {
       const patch: Partial<Settings> = {}
       for (const k of [
@@ -360,7 +362,9 @@ export const register: Register = on => {
     return ok(
       Object.entries(s)
         .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
-        .join('\n') + `\n${L('任务板目录：', 'Board folder: ')}${disp.boardDir}`,
+        .join('\n') +
+        `\n${L('任务板目录：', 'Board folder: ')}${disp.boardDir}` +
+        `\nDeepSeek key: ${disp.keyHint ?? L('未配置', 'not set')}`,
     )
   })
 
@@ -399,6 +403,9 @@ export const register: Register = on => {
           return L(`已重新派单：${spec.id}`, `Created again as ${spec.id}`)
         })(),
       refresh: () => void disp?.tick(),
+      saveKey: value =>
+        act(async () => (disp ? disp.saveDeepseekKey(value) : L('派单器没有启动', 'The dispatcher is not running')))(),
+      testKey: () => act(async () => (disp ? disp.testDeepseek() : L('派单器没有启动', 'The dispatcher is not running')))(),
       openSettings: () => void update($, viewAtom, (cur): View => ({ ...cur, screen: 'settings', selected: undefined })),
       closeSettings: () => void update($, viewAtom, (cur): View => ({ ...cur, screen: 'list' })),
       setSetting: (key, value) =>

@@ -19,6 +19,8 @@ export type Actions = {
   openSettings: () => void
   closeSettings: () => void
   setSetting: (key: keyof Settings, value: string | number | boolean) => void
+  saveKey: (value: string) => void
+  testKey: () => void
 }
 
 const PAGE = 12
@@ -388,7 +390,7 @@ const onOff = () => [
 ]
 
 function renderSettings(el: any, width: number, s: Snapshot, st: Settings, a: Actions) {
-  const { Box, Text, Button, Input, Select } = el
+  const { Box, Text, Button, Input, Select, Link } = el
   const field = (label: string, hint: string, control: any, key: string) => (
     <Box key={key} flexDirection="column" marginBottom={1}>
       <Text weight="medium">{label}</Text>
@@ -539,8 +541,36 @@ function renderSettings(el: any, width: number, s: Snapshot, st: Settings, a: Ac
         L('智能体', 'Agents'),
         [
           field(
-            L('DeepSeek Key 文件', 'DeepSeek key file'),
-            L('一个文本文件，内容写 DEEPSEEK_API_KEY=你的Key（可选 DEEPSEEK_MODEL=deepseek-flash）。派单器只把它交给智能体进程，不显示、不上传。', 'A text file with DEEPSEEK_API_KEY=your-key (optionally DEEPSEEK_MODEL=deepseek-flash). It is only passed to agent processes, never shown or uploaded.'),
+            'DeepSeek API Key',
+            L(
+              'Key 只保存在这台电脑的一个文件里（仅你自己可读），不会显示、不会上传，只交给智能体进程使用。',
+              'The key is kept only in a file on this computer (readable by you alone); it is never shown or uploaded, only handed to agent processes.',
+            ),
+            <Box key="dskey" flexDirection="column">
+              <Text>
+                {s.keyHint ? (
+                  <Text color="success">{L(`✓ 已配置：${s.keyHint}`, `✓ Set: ${s.keyHint}`)}</Text>
+                ) : (
+                  <Text color="warning">{L('还没填', 'Not set')}</Text>
+                )}
+              </Text>
+              <Input
+                key="in-dskey"
+                value=""
+                placeholder={s.keyHint ? L('粘贴新的 Key 可替换', 'Paste a new key to replace it') : L('粘贴 sk- 开头的 Key', 'Paste your sk-… key')}
+                submitLabel={L('保存', 'Save')}
+                onSubmit={(value: string) => a.saveKey(value)}
+              />
+              <Box flexDirection="row" gap={2} flexWrap="wrap">
+                <Button key="testkey" label={L('测试连接', 'Test connection')} onPress={a.testKey} />
+                <Link key="getkey" href="https://platform.deepseek.com/api_keys" label={L('去 DeepSeek 开放平台创建 Key ↗', 'Create a key on the DeepSeek platform ↗')} />
+              </Box>
+            </Box>,
+            'f-dskey',
+          ),
+          field(
+            L('Key 文件位置（高级）', 'Key file location (advanced)'),
+            L('一般不用改。', 'Usually no need to change this.'),
             text('deepseekEnvFile', '~/.agent-dispatch/deepseek.env'),
             'f-key',
           ),

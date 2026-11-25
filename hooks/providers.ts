@@ -106,7 +106,7 @@ const READ_TOOLS = 'Read,Grep,Glob'
 const EDIT_TOOLS = 'Read,Grep,Glob,Edit,Write,Bash'
 
 /** 读 deepseek.env（KEY=VALUE），不打印任何值 */
-async function readEnvFile(io: IO, path: string): Promise<Record<string, string>> {
+export async function readEnvFile(io: IO, path: string): Promise<Record<string, string>> {
   const out: Record<string, string> = {}
   let text = ''
   try {
@@ -140,10 +140,7 @@ export async function checkProvider(
   if (id.startsWith('deepseek')) {
     const env = await readEnvFile(io, expandHome(settings.deepseekEnvFile, host))
     if (!env.DEEPSEEK_API_KEY)
-      return L(
-        `没找到 DeepSeek Key：请在 ${settings.deepseekEnvFile} 里填写 DEEPSEEK_API_KEY`,
-        `No DeepSeek key found: put DEEPSEEK_API_KEY=... in ${settings.deepseekEnvFile}`,
-      )
+      return L('还没填 DeepSeek Key：点“⚙ 设置” → 智能体，粘贴 Key 保存即可', 'No DeepSeek key yet: open ⚙ Settings → Agents and paste your key')
   }
   return undefined
 }
@@ -279,4 +276,63 @@ export function extractVerdict(text: string): 'approved' | 'rejected' | undefine
   const en = /VERDICT:\s*(PASS|FAIL)/i.exec(text)
   if (en?.[1]) return en[1].toUpperCase() === 'PASS' ? 'approved' : 'rejected'
   return undefined
+}
+
+/** 只显示 Key 的头尾，例如 sk-…1a2b */
+export function maskKey(key: string): string {
+  return key.length > 10 ? `${key.slice(0, 3)}…${key.slice(-4)}` : '…'
+}
+
+/** 把 Key 写进 Key 文件：保留文件里其他行，只替换 DEEPSEEK_API_KEY；Mac/Linux 上设成仅自己可读 */
+export async function writeDeepseekKey(io: IO, host: Host, settings: Settings, raw: string): Promise<string> {
+  const key = raw.trim().replace(/^(?:export\s+)?DEEPSEEK_API_KEY\s*=\s*/, '').replace(/^["']|["']$/g, '')
+  if (!/^sk-[A-Za-z0-9_-]{16,}$/.test(key)) {
+    throw new Error(L('这不像 DeepSeek Key：应以 sk- 开头、中间没有空格', 'That does not look like a DeepSeek key: it starts with sk- and has no spaces'))
+  }
+  const path = expandHome(settings.deepseekEnvFile, host)
+  let text = ''
+  try {
+    text = await io.read(path)
+  } catch {
+    text = ''
+  }
+  const lines = text.split(/\r?\n/).filter(l => l.trim() !== '' && !/^\s*(?:export\s+)?DEEPSEEK_API_KEY\s*=/.test(l))
+  lines.unshift(`DEEPSEEK_API_KEY=${key}`)
+  if (!lines.some(l => /^\s*(?:export\s+)?DEEPSEEK_MODEL\s*=/.test(l))) lines.push('DEEPSEEK_MODEL=deepseek-flash')
+  await io.write(path, `${lines.join('\n')}\n`)
+  if (!host.isWindows) {
+    try {
+      await io.run(['/bin/chmod', '600', path])
+    } catch {
+      /* 权限设置失败不影响使用 */
+    }
+  }
+  return maskKey(key)
+}
+
+/** 用 Key 查余额：同时验证 Key 是否可用 */
+export async function testDeepseek(io: IO, host: Host, settings: Settings): Promise<string> {
+  const env = await readEnvFile(io, expandHome(settings.deepseekEnvFile, host))
+  const key = env.DEEPSEEK_API_KEY
+  if (!key) return L('还没填 DeepSeek Key', 'No DeepSeek key yet')
+  let r: { status: number; ok: boolean; text: string }
+  try {
+    r = await io.fetch('https://api.deepseek.com/user/balance', {
+      headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' },
+    })
+  } catch (err) {
+    return L(`连不上 DeepSeek：${err instanceof Error ? err.message : String(err)}`, `Cannot reach DeepSeek: ${err instanceof Error ? err.message : String(err)}`)
+  }
+  if (r.status === 401) return L('Key 无效或已被删除，请重新创建一个', 'The key is invalid or was deleted; create a new one')
+  if (!r.ok) return L(`DeepSeek 返回 ${r.status}`, `DeepSeek answered ${r.status}`)
+  try {
+    const data = JSON.parse(r.text) as { is_available?: boolean; balance_infos?: { currency?: string; total_balance?: string }[] }
+    const infos = data.balance_infos ?? []
+    const nonZero = infos.filter(b => Number(b.total_balance ?? 0) > 0)
+    const bal = (nonZero.length ? nonZero : infos.slice(0, 1)).map(b => `${b.currency === 'CNY' ? '¥' : b.currency === 'USD' ? '$' : `${b.currency ?? ''} `}${b.total_balance ?? '?'}`).join(' / ')
+    if (data.is_available === false) return L(`Key 可用，但余额不足（${bal || '0'}），请先充值`, `The key works but the balance is too low (${bal || '0'}); top up first`)
+    return L(`连接成功 ✓ 余额 ${bal || '未知'}`, `Connected ✓ balance ${bal || 'unknown'}`)
+  } catch {
+    return L('连接成功 ✓', 'Connected ✓')
+  }
 }

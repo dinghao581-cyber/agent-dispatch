@@ -36,14 +36,9 @@ claude plugin install agent-dispatch --marketplace dinghao581-cyber/agent-dispat
 
 ## 第一次使用
 
-1. 准备 DeepSeek Key 文件（默认 `~/.agent-dispatch/deepseek.env`，路径可在设置里改）：
-   ```
-   DEEPSEEK_API_KEY=你的 Key
-   DEEPSEEK_MODEL=deepseek-flash
-   ```
-   派单器只把它交给智能体进程，不显示、不上传。
-2. 确认 `claude` 命令可用（智能体就是用 DeepSeek 接口跑的无头 Claude Code）。不在 PATH 里就在设置里填完整路径。
-3. 打开面板（桌面端会自动出现在右侧；也可以输入 `/dispatch`），然后对 Claude 说“用派单器派一张单：……”。
+1. 打开面板：桌面端会自动出现在右侧；也可以输入 `/dispatch`。
+2. 点右上角“⚙ 设置” → 智能体 → DeepSeek API Key：点“去 DeepSeek 开放平台创建 Key ↗”建一个 Key，粘贴进来按“保存”，再点“测试连接”，看到余额就好了。Key 只存在本机文件里（仅自己可读），不显示、不上传。
+3. 对 Claude 说“用派单器派一张单：……”。智能体是借 DeepSeek 接口运行的无头 Claude Code，需要 `claude` 命令可用；不在 PATH 里就在设置里填完整路径。
 
 ### 多台电脑共享
 
@@ -93,7 +88,7 @@ claude plugin test .
 - Optional acceptance gate: per-task git worktree, auto-commit, test command, then the merge request goes to you, to Claude, or to a reviewer agent.
 - Off-peak-only scheduling for DeepSeek's half-price hours; cost tracked from real token usage.
 - Bilingual UI: Settings → Language → Auto (follows the system), 中文 or English.
-- Install with `/plugin install agent-dispatch --marketplace dinghao581-cyber/agent-dispatch`, put `DEEPSEEK_API_KEY=...` in `~/.agent-dispatch/deepseek.env`, open the panel with `/dispatch`.
+- Install with `/plugin install agent-dispatch --marketplace dinghao581-cyber/agent-dispatch`, open the panel (or type `/dispatch`), then ⚙ Settings → Agents: paste your DeepSeek API key, press Save and Test connection (it shows your balance). The key stays in a local file readable only by you.
 
 ## 许可证
 

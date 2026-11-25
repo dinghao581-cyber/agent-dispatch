@@ -115,6 +115,8 @@ export type Snapshot = {
   error?: string
   /** 配置提醒，例如还没设置 DeepSeek Key 文件 */
   warning?: string
+  /** 已保存的 DeepSeek Key 的掩码（sk-…1a2b），没有则空 */
+  keyHint?: string
   /** 本会话是否已接上界面、负责调度 */
   isActive: boolean
   /** 当前界面语言；变了面板就重画 */

@@ -136,3 +136,14 @@ test('英文设置页有语言选项', async ($, on) => {
   expect(await ui.find({ type: 'Text', text: /Max agents at once/ })).toBeDefined()
   await ui.unmount()
 })
+
+test('设置页可以直接粘贴 DeepSeek Key', async ($, on) => {
+  seed(on, { tab: 'active', page: 0, screen: 'settings' })
+  for (const surface of ['desktop', 'terminal'] as const) {
+    const ui = await $.ui.mount({ ...PANE, surface })
+    expect(await ui.find({ key: 'in-dskey' })).toBeDefined()
+    expect(await ui.find({ key: 'testkey' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /还没填/ })).toBeDefined()
+    await ui.unmount()
+  }
+})
