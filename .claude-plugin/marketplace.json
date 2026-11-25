@@ -1,0 +1,5 @@
+{
+  "name": "agent-dispatch",
+  "owner": { "name": "dinghao581-cyber" },
+  "plugins": [{ "name": "agent-dispatch", "source": "./" }]
+}

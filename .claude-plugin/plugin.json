@@ -1,0 +1,19 @@
+{
+  "name": "agent-dispatch",
+  "version": "0.1.0",
+  "description": "派单器：在 Claude 客户端右侧面板调度 DeepSeek 等智能体，支持 NAS 共享任务板、验收闸门和 Claude 直接调用。",
+  "types": "./types/index.d.ts",
+  "license": "Apache-2.0",
+  "keywords": [
+    "agents",
+    "dispatcher",
+    "deepseek",
+    "task-board",
+    "sidebar"
+  ],
+  "author": {
+    "name": "dinghao581-cyber"
+  },
+  "homepage": "https://github.com/dinghao581-cyber/agent-dispatch",
+  "repository": "https://github.com/dinghao581-cyber/agent-dispatch"
+}
