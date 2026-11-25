@@ -2,6 +2,8 @@
 
 在 Claude 客户端（Mac / Windows 桌面端的 Code 页，以及终端版 Claude Code）的右侧面板里调度一群后台智能体：每个智能体的状态、进度一目了然，点开看完整细节；Claude 可以直接调用工具派单、查询、停止和验收。
 
+<img src="docs/panel.png" alt="派单器面板" width="420">
+
 *A Claude Code mod that dispatches background coding agents (DeepSeek today; GPT and Claude API slots reserved) from a sidebar panel. Claude can call it directly; tasks can live on a shared NAS board used by several machines. UI is in Chinese; English README section below.*
 
 ## 功能
