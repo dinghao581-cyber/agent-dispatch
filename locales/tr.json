@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (yeni görevler yalnızca sakin saatlerde başlar)",
+ " (retried OK → {0})": " (Yeniden deneme başarılı → {0})",
  " (this session only watches; another session on this machine schedules)": " (bu oturum yalnızca izler; planlamayı bu makinedeki başka bir oturum yapar)",
  " · gate on (review by {0})": " · kapı açık (inceleyen: {0})",
+ " · retried OK → {0}": " · Yeniden deneme başarılı → {0}",
  " · review by {0}": " · inceleyen: {0}",
  " · test {0}": " · test {0}",
  "(end)": "(son)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "{0} reddedildi; dal {1} referans için korundu",
  "Result": "Sonuç",
  "Result:": "Sonuç:",
+ "Retried OK → {0}": "Yeniden deneme başarılı → {0}",
+ "Retried OK: {0} ›": "Yeniden deneme başarılı: {0} ›",
  "Review": "İnceleme",
  "Review: approved ({0})": "İnceleme: onaylandı ({0})",
  "Review: rejected ({0})": "İnceleme: reddedildi ({0})",

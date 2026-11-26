@@ -42,7 +42,32 @@ export function rowOf(spec: TaskSpec, state?: TaskState): Row {
     costUSD: state?.costUSD ?? 0,
     summary: state?.summary,
     reviewTo: spec.reviewTo,
+    retryOf: spec.retryOf?.replace(/^auto:/, '') || undefined,
   }
+}
+
+/** 失败 / 停止 / 驳回 / 中断，但后来重新派单成功了：不再算异常，归到“完成”一栏 */
+export function markRetried(rows: Row[]): Row[] {
+  const byId = new Map(rows.map(r => [r.id, r]))
+  const fixed = new Map<string, string>()
+  for (const r of rows) {
+    if (r.status !== 'done') continue
+    let target = r.retryOf
+    const seen = new Set<string>()
+    while (target && !seen.has(target)) {
+      seen.add(target)
+      const t = byId.get(target)
+      if (!t || t.status === 'done' || !isTerminal(t.status)) break
+      if (!fixed.has(t.id)) fixed.set(t.id, r.id)
+      target = t.retryOf
+    }
+  }
+  return rows.map(r => (fixed.has(r.id) ? { ...r, retriedBy: fixed.get(r.id) } : r))
+}
+
+/** 面板分栏和计数用的状态：重派成功的旧工单记作 retried */
+export function effectiveStatus(r: Row): string {
+  return r.retriedBy ? 'retried' : r.status
 }
 
 export class Board {

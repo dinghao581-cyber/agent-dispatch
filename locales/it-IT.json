@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (i nuovi incarichi partono solo fuori punta)",
+ " (retried OK → {0})": " (Nuovo tentativo riuscito → {0})",
  " (this session only watches; another session on this machine schedules)": " (questa sessione osserva soltanto; lo smistamento è gestito da un'altra sessione su questa macchina)",
  " · gate on (review by {0})": " · controllo attivo (revisione: {0})",
+ " · retried OK → {0}": " · Nuovo tentativo riuscito → {0}",
  " · review by {0}": " · revisione: {0}",
  " · test {0}": " · test {0}",
  "(end)": "(fine)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Rifiutato {0}; ramo {1} conservato per riferimento",
  "Result": "Risultato",
  "Result:": "Risultato:",
+ "Retried OK → {0}": "Nuovo tentativo riuscito → {0}",
+ "Retried OK: {0} ›": "Nuovo tentativo riuscito: {0} ›",
  "Review": "Da rivedere",
  "Review: approved ({0})": "Revisione: approvata ({0})",
  "Review: rejected ({0})": "Revisione: rifiutata ({0})",

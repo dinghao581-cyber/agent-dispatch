@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (chỉ mở tác vụ mới ngoài giờ cao điểm)",
+ " (retried OK → {0})": " (Thử lại thành công → {0})",
  " (this session only watches; another session on this machine schedules)": " (phiên này chỉ theo dõi; phiên khác trên máy này điều phối)",
  " · gate on (review by {0})": " · cổng bật (giao {0} duyệt)",
+ " · retried OK → {0}": " · Thử lại thành công → {0}",
  " · review by {0}": " · giao {0} duyệt",
  " · test {0}": " · kiểm thử {0}",
  "(end)": "(hết)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Đã từ chối {0}; giữ nhánh {1} để tham khảo",
  "Result": "Kết quả",
  "Result:": "Kết quả:",
+ "Retried OK → {0}": "Thử lại thành công → {0}",
+ "Retried OK: {0} ›": "Thử lại thành công: {0} ›",
  "Review": "Chờ duyệt",
  "Review: approved ({0})": "Duyệt: chấp thuận ({0})",
  "Review: rejected ({0})": "Duyệt: từ chối ({0})",

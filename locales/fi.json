@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (uudet tehtävät alkavat vain hiljaisaikana)",
+ " (retried OK → {0})": " (Uusintayritys onnistui → {0})",
  " (this session only watches; another session on this machine schedules)": " (tämä istunto vain seuraa; toinen istunto tällä koneella aikatauluttaa)",
  " · gate on (review by {0})": " · portti päällä (arvioija: {0})",
+ " · retried OK → {0}": " · Uusintayritys onnistui → {0}",
  " · review by {0}": " · arvioija: {0}",
  " · test {0}": " · testi {0}",
  "(end)": "(loppu)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Hylätty {0}; haara {1} säilytetty viitteeksi",
  "Result": "Tulos",
  "Result:": "Tulos:",
+ "Retried OK → {0}": "Uusintayritys onnistui → {0}",
+ "Retried OK: {0} ›": "Uusintayritys onnistui: {0} ›",
  "Review": "Arvioitavana",
  "Review: approved ({0})": "Arviointi: hyväksytty ({0})",
  "Review: rejected ({0})": "Arviointi: hylätty ({0})",

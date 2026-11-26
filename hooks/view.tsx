@@ -4,6 +4,7 @@ import { clip, fmtDuration, fmtTime, fmtTokens, fmtUSD } from './util'
 import { PROVIDERS, noteOf, providerOf } from './providers'
 import { L, LANGUAGES, normalizeSetting, setLang } from './i18n'
 import { statusLabel } from './runner'
+import { effectiveStatus } from './board'
 import type { Detail, Row, Settings, SettingsTab, Snapshot, Tab, View } from '../types'
 
 export type Actions = {
@@ -32,7 +33,7 @@ const TABS: { tab: Tab; label: () => string; statuses: string[] }[] = [
   { tab: 'active', label: () => L('进行中', 'Active'), statuses: ['running', 'testing'] },
   { tab: 'queued', label: () => L('排队', 'Queued'), statuses: ['queued'] },
   { tab: 'review', label: () => L('待审', 'Review'), statuses: ['review'] },
-  { tab: 'done', label: () => L('完成', 'Done'), statuses: ['done'] },
+  { tab: 'done', label: () => L('完成', 'Done'), statuses: ['done', 'retried'] },
   { tab: 'failed', label: () => L('异常', 'Issues'), statuses: ['failed', 'stopped', 'rejected', 'interrupted'] },
 ]
 
@@ -46,6 +47,7 @@ const GLYPH: Record<string, { g: string; color?: string }> = {
   stopped: { g: '■', color: 'inactive' },
   rejected: { g: '✕', color: 'inactive' },
   interrupted: { g: '!', color: 'warning' },
+  retried: { g: '↻', color: 'inactive' },
 }
 
 function count(s: Snapshot, statuses: string[]): number {
@@ -136,7 +138,7 @@ export function renderPane(
   )
 
   const tabDef = TABS.find(t => t.tab === v.tab) ?? TABS[0]!
-  const rows = s.rows.filter(r => tabDef.statuses.includes(r.status))
+  const rows = s.rows.filter(r => tabDef.statuses.includes(effectiveStatus(r)))
   const pages = Math.max(1, Math.ceil(rows.length / PAGE))
   const page = Math.min(v.page, pages - 1)
   const shown = rows.slice(page * PAGE, page * PAGE + PAGE)
@@ -163,7 +165,7 @@ export function renderPane(
       )}
 
       {shown.map(r => {
-        const g = GLYPH[r.status] ?? { g: '·' }
+        const g = GLYPH[effectiveStatus(r)] ?? { g: '·' }
         const meta = [s.mode === 'shared' && r.machine ? `@${r.machine}` : '', elapsed(r), r.costUSD ? fmtUSD(r.costUSD) : '']
           .filter(Boolean)
           .join(' · ')
@@ -180,7 +182,7 @@ export function renderPane(
             ) : (
               <Text dimColor wrap="truncate-end">
                 {'  '}
-                {r.summary ? clip(r.summary, Math.max(20, width - 4)) : meta}
+                {r.retriedBy ? L('已重派成功 → {0}', 'Retried OK → {0}', r.retriedBy) : r.summary ? clip(r.summary, Math.max(20, width - 4)) : meta}
               </Text>
             )}
           </Box>
@@ -219,7 +221,9 @@ function emptyText(tab: Tab): string {
 
 function renderDetail(el: any, width: number, s: Snapshot, d: Detail | null, id: string, a: Actions) {
   const { Box, Text, Button, Progress, Markdown, Code } = el
-  const row = d?.row ?? s.rows.find(r => r.id === id)
+  const snapRow = s.rows.find(r => r.id === id)
+  const row = d?.row ?? snapRow
+  const retriedBy = snapRow?.retriedBy
   if (!row) {
     return (
       <Box flexDirection="column" paddingX={1}>
@@ -270,7 +274,12 @@ function renderDetail(el: any, width: number, s: Snapshot, d: Detail | null, id:
             <Progress label={row.lastAction ? clip(row.lastAction, Math.max(16, width - 12)) : L('思考中…', 'Thinking…')} color="claude" />
           </Box>
         )}
-        {d?.error && <Text color="error">{clip(d.error, 300)}</Text>}
+        {d?.error && <Text color={retriedBy ? undefined : 'error'} dimColor={!!retriedBy}>{clip(d.error, 300)}</Text>}
+        {retriedBy && (
+          <Button key="open-retry" plain onPress={() => a.open(retriedBy)}>
+            <Text color="success">↻ {L('已重派成功：{0} ›', 'Retried OK: {0} ›', retriedBy)}</Text>
+          </Button>
+        )}
       </Box>
 
       <Box flexDirection="row" gap={1} flexWrap="wrap" marginBottom={1}>
@@ -278,7 +287,7 @@ function renderDetail(el: any, width: number, s: Snapshot, d: Detail | null, id:
         {row.status === 'queued' && <Button key="cancel" label={L('取消排队', 'Cancel')} onPress={() => a.cancel(row.id)} />}
         {row.status === 'review' && <Button key="approve" label={L('批准并合并', 'Approve & merge')} variant="primary" onPress={() => a.approve(row.id)} />}
         {row.status === 'review' && <Button key="reject" label={L('驳回', 'Reject')} onPress={() => a.reject(row.id)} />}
-        {['failed', 'stopped', 'interrupted', 'rejected', 'done'].includes(row.status) && (
+        {['failed', 'stopped', 'interrupted', 'rejected', 'done'].includes(row.status) && !retriedBy && (
           <Button key="retry" label={L('重新派单', 'Run again')} onPress={() => a.retry(row.id)} />
         )}
       </Box>

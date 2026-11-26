@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (les nouvelles tâches ne démarrent qu'en heures creuses)",
+ " (retried OK → {0})": " (Nouvel essai OK → {0})",
  " (this session only watches; another session on this machine schedules)": " (cette session observe seulement ; une autre session de cette machine planifie)",
  " · gate on (review by {0})": " · validation activée (par {0})",
+ " · retried OK → {0}": " · Nouvel essai OK → {0}",
  " · review by {0}": " · validation par {0}",
  " · test {0}": " · test {0}",
  "(end)": "(fin)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "{0} rejeté ; branche {1} conservée pour référence",
  "Result": "Résultat",
  "Result:": "Résultat :",
+ "Retried OK → {0}": "Nouvel essai OK → {0}",
+ "Retried OK: {0} ›": "Nouvel essai OK : {0} ›",
  "Review": "À valider",
  "Review: approved ({0})": "Validation : approuvé ({0})",
  "Review: rejected ({0})": "Validation : rejeté ({0})",

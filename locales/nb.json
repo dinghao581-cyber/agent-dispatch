@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (nye oppgaver starter bare utenfor rushtid)",
+ " (retried OK → {0})": " (Nytt forsøk vellykket → {0})",
  " (this session only watches; another session on this machine schedules)": " (denne økten følger bare med; en annen økt på denne maskinen styrer køen)",
  " · gate on (review by {0})": " · godkjenningsport på (gjennomgås av {0})",
+ " · retried OK → {0}": " · Nytt forsøk vellykket → {0}",
  " · review by {0}": " · gjennomgås av {0}",
  " · test {0}": " · test {0}",
  "(end)": "(slutt)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Avviste {0}; grenen {1} er beholdt til referanse",
  "Result": "Resultat",
  "Result:": "Resultat:",
+ "Retried OK → {0}": "Nytt forsøk vellykket → {0}",
+ "Retried OK: {0} ›": "Nytt forsøk vellykket: {0} ›",
  "Review": "Gjennomgang",
  "Review: approved ({0})": "Gjennomgang: godkjent ({0})",
  "Review: rejected ({0})": "Gjennomgang: avvist ({0})",

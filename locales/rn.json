@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (ibikorwa bishasha bitangura gusa igihe kitari isonga)",
+ " (retried OK → {0})": " (Casubiye gutangwa neza → {0})",
  " (this session only watches; another session on this machine schedules)": " (iyi sesiyo ireba gusa; iyindi sesiyo kuri iyi mudasobwa ni yo ipanga)",
  " · gate on (review by {0})": " · irembo rifunguye (igenzura na {0})",
+ " · retried OK → {0}": " · Casubiye gutangwa neza → {0}",
  " · review by {0}": " · igenzura na {0}",
  " · test {0}": " · ikizamini {0}",
  "(end)": "(iherezo)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Yanzwe {0}; ishami {1} ryagumijwe ku bwo kwibuka",
  "Result": "Igisubizo",
  "Result:": "Igisubizo:",
+ "Retried OK → {0}": "Casubiye gutangwa neza → {0}",
+ "Retried OK: {0} ›": "Casubiye gutangwa neza: {0} ›",
  "Review": "Igenzura",
  "Review: approved ({0})": "Igenzura: byemejwe ({0})",
  "Review: rejected ({0})": "Igenzura: byanzwe ({0})",

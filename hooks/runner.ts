@@ -15,7 +15,7 @@ import {
   shellArgv,
   tail,
 } from './util'
-import { Board, isTerminal, rowOf } from './board'
+import { Board, effectiveStatus, isTerminal, markRetried, rowOf } from './board'
 import type { Control, ControlAction } from './board'
 import {
   buildLaunch,
@@ -122,6 +122,17 @@ export class Dispatcher {
   async open(): Promise<void> {
     this.board = new Board(this.io, this.host, this.boardDir, this.machine)
     await this.board.init()
+    await this.backfillRetryOf()
+  }
+
+  /** 0.5.1 以前写进热层的行没有 retryOf：从工单内容补上，让“重派成功不算异常”对旧工单也生效 */
+  async backfillRetryOf(): Promise<void> {
+    for (const row of [...this.board.hot.values()]) {
+      if ('retryOf' in row) continue
+      const spec = await this.board.getSpec(row.id)
+      this.board.hot.set(row.id, { ...row, retryOf: spec?.retryOf?.replace(/^auto:/, '') || undefined })
+      this.board.hotDirty = true
+    }
   }
 
   /** 第一次真正画出界面时调用：开始抢调度锁、处理上次中断的工单 */
@@ -763,7 +774,7 @@ export class Dispatcher {
     for (const r of this.board.hot.values()) put(r)
     for (const run of this.runs.values()) put(rowOf(run.spec, run.state))
     // 排队标记还在但已有状态的，以状态为准
-    return [...map.values()]
+    return markRetried([...map.values()])
   }
 
   snapshot(): Snapshot {
@@ -772,7 +783,8 @@ export class Dispatcher {
     let costToday = 0
     const today = dayKey(Date.now())
     for (const r of rows) {
-      counts[r.status] = (counts[r.status] ?? 0) + 1
+      const st = effectiveStatus(r)
+      counts[st] = (counts[st] ?? 0) + 1
       const when = r.endedAt ?? r.startedAt
       if (when && dayKey(when) === today) costToday += r.costUSD
     }
@@ -878,15 +890,15 @@ export class Dispatcher {
         ? L('派单器 · {0} · 共享任务板 {1}', 'Dispatcher · {0} · shared board {1}', s.machine, s.boardDir)
         : L('派单器 · {0} · 本机任务板 {1}', 'Dispatcher · {0} · local board {1}', s.machine, s.boardDir)) +
         (s.isOwner ? '' : L('（本会话只旁观，调度由本机另一个会话负责）', ' (this session only watches; another session on this machine schedules)')),
-      L('运行 {0}/{1} · 排队 {2} · 待审 {3} · 近 {4} 天完成 {5} · 失败 {6} · 中断 {7}', 'Running {0}/{1} · queued {2} · review {3} · done (last {4} days) {5} · failed {6} · interrupted {7}', c('running') + c('testing'), s.maxConcurrent, c('queued'), c('review'), this.settings.hotDays, c('done'), c('failed'), c('interrupted')),
+      L('运行 {0}/{1} · 排队 {2} · 待审 {3} · 近 {4} 天完成 {5} · 失败 {6} · 中断 {7}', 'Running {0}/{1} · queued {2} · review {3} · done (last {4} days) {5} · failed {6} · interrupted {7}', c('running') + c('testing'), s.maxConcurrent, c('queued'), c('review'), this.settings.hotDays, c('done') + c('retried'), c('failed'), c('interrupted')),
       L('今日费用 {0}', 'Cost today {0}', fmtUSD(s.costToday)) +
         ' · ' +
         (s.isPeak ? L('DeepSeek 高峰时段', 'DeepSeek peak hours') : L('DeepSeek 低谷时段', 'DeepSeek off-peak')) +
         (s.offPeakOnly ? L('（只在低谷开新单）', ' (new tasks start off-peak only)') : ''),
     ]
-    const pick = (st: string[], n: number) => s.rows.filter(r => st.includes(r.status)).slice(0, n)
+    const pick = (st: string[], n: number) => s.rows.filter(r => st.includes(effectiveStatus(r))).slice(0, n)
     const fmt = (r: Row) =>
-      `- ${r.id} [${statusLabel(r.status)}] ${r.title}${r.machine ? ` @${r.machine}` : ''}${r.turns ? ` · ${r.turns} ${L('轮', 'turns')}` : ''}${r.costUSD ? ` · ${fmtUSD(r.costUSD)}` : ''}${r.lastAction && (r.status === 'running') ? ` · ${clip(r.lastAction, 50)}` : ''}${r.summary && isTerminal(r.status) ? ` · ${clip(r.summary, 80)}` : ''}`
+      `- ${r.id} [${statusLabel(r.status)}] ${r.title}${r.machine ? ` @${r.machine}` : ''}${r.turns ? ` · ${r.turns} ${L('轮', 'turns')}` : ''}${r.costUSD ? ` · ${fmtUSD(r.costUSD)}` : ''}${r.lastAction && (r.status === 'running') ? ` · ${clip(r.lastAction, 50)}` : ''}${r.retriedBy ? L(' · 已重派成功 → {0}', ' · retried OK → {0}', r.retriedBy) : ''}${r.summary && isTerminal(r.status) ? ` · ${clip(r.summary, 80)}` : ''}`
     const running = pick(['running', 'testing'], 10)
     const attention = pick(['review', 'failed', 'interrupted'], 10)
     if (running.length) lines.push('', L('运行中：', 'Running:'), ...running.map(fmt))
@@ -949,7 +961,7 @@ function humanLog(raw: string): string {
 export function rowLine(r: Row): string {
   const parts = [
     r.id,
-    statusLabel(r.status),
+    statusLabel(r.status) + (r.retriedBy ? L('（已重派成功 → {0}）', ' (retried OK → {0})', r.retriedBy) : ''),
     r.title,
     providerOf(r.provider)?.short ?? r.provider,
     r.machine ? `@${r.machine}` : r.target !== 'any' ? `→${r.target}` : '',

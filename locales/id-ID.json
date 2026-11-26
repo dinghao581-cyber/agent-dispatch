@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (tugas baru hanya dimulai di luar jam sibuk)",
+ " (retried OK → {0})": " (Percobaan ulang berhasil → {0})",
  " (this session only watches; another session on this machine schedules)": " (sesi ini hanya memantau; sesi lain di komputer ini yang menjadwalkan)",
  " · gate on (review by {0})": " · gerbang aktif (ditinjau oleh {0})",
+ " · retried OK → {0}": " · Percobaan ulang berhasil → {0}",
  " · review by {0}": " · ditinjau oleh {0}",
  " · test {0}": " · tes {0}",
  "(end)": "(akhir)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Ditolak {0}; cabang {1} disimpan untuk referensi",
  "Result": "Hasil",
  "Result:": "Hasil:",
+ "Retried OK → {0}": "Percobaan ulang berhasil → {0}",
+ "Retried OK: {0} ›": "Percobaan ulang berhasil: {0} ›",
  "Review": "Tinjauan",
  "Review: approved ({0})": "Tinjauan: disetujui ({0})",
  "Review: rejected ({0})": "Tinjauan: ditolak ({0})",

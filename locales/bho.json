@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (नया टास्क खाली ऑफ-पीक समय शुरू होखे)",
+ " (retried OK → {0})": " (फेर से सफल → {0})",
  " (this session only watches; another session on this machine schedules)": " (ई सत्र खाली देखत बा; शेड्यूलिंग एह मशीन के दोसर सत्र करत बा)",
  " · gate on (review by {0})": " · गेट चालू (स्वीकृति {0} से)",
+ " · retried OK → {0}": " · फेर से सफल → {0}",
  " · review by {0}": " · समीक्षा {0} से",
  " · test {0}": " · टेस्ट {0}",
  "(end)": "(अंत)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "{0} अस्वीकार भइल, ब्रांच {1} देखे खातिर रखल गइल",
  "Result": "नतीजा",
  "Result:": "नतीजा:",
+ "Retried OK → {0}": "फेर से सफल → {0}",
+ "Retried OK: {0} ›": "फेर से सफल: {0} ›",
  "Review": "समीक्षा",
  "Review: approved ({0})": "समीक्षा: स्वीकृत ({0})",
  "Review: rejected ({0})": "समीक्षा: अस्वीकृत ({0})",

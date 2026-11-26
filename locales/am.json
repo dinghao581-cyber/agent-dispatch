@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (አዲስ ተግባሮች የሚጀመሩት ዝቅተኛ ጊዜ ብቻ ነው)",
+ " (retried OK → {0})": " (እንደገና ተሳክቷል → {0})",
  " (this session only watches; another session on this machine schedules)": " (ይህ ክፍለ ጊዜ ተመልካች ብቻ ነው፤ በዚህ ኮምፒውተር ላይ ያለ ሌላ ክፍለ ጊዜ ነው የሚያስተላልፈው)",
  " · gate on (review by {0})": " · በር ክፍት (ግምገማ በ{0})",
+ " · retried OK → {0}": " · እንደገና ተሳክቷል → {0}",
  " · review by {0}": " · ግምገማ በ{0}",
  " · test {0}": " · ፈተና {0}",
  "(end)": "(መጨረሻ)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "{0} ውድቅ ተደርጓል፤ ቅርንጫፍ {1} ለማጣቀሻ ተይዟል",
  "Result": "ውጤት",
  "Result:": "ውጤት፦",
+ "Retried OK → {0}": "እንደገና ተሳክቷል → {0}",
+ "Retried OK: {0} ›": "እንደገና ተሳክቷል፦ {0} ›",
  "Review": "ግምገማ",
  "Review: approved ({0})": "ግምገማ፦ ጸድቋል ({0})",
  "Review: rejected ({0})": "ግምገማ፦ ውድቅ ተደርጓል ({0})",

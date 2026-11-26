@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (नए कार्य केवल ऑफ़-पीक में शुरू होते हैं)",
+ " (retried OK → {0})": " (पुनः प्रयास सफल → {0})",
  " (this session only watches; another session on this machine schedules)": " (यह सत्र केवल देखता है; इस मशीन पर कोई दूसरा सत्र शेड्यूल करता है)",
  " · gate on (review by {0})": " · गेट चालू ({0} समीक्षा करेगा)",
+ " · retried OK → {0}": " · पुनः प्रयास सफल → {0}",
  " · review by {0}": " · {0} समीक्षा करेगा",
  " · test {0}": " · परीक्षण {0}",
  "(end)": "(अंत)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "{0} अस्वीकार किया; ब्रांच {1} संदर्भ के लिए सुरक्षित रखी गई",
  "Result": "परिणाम",
  "Result:": "परिणाम:",
+ "Retried OK → {0}": "पुनः प्रयास सफल → {0}",
+ "Retried OK: {0} ›": "पुनः प्रयास सफल: {0} ›",
  "Review": "समीक्षा",
  "Review: approved ({0})": "समीक्षा: स्वीकृत ({0})",
  "Review: rejected ({0})": "समीक्षा: अस्वीकृत ({0})",

@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (ntchito zatsopano zimayamba nthawi yotsika yokha)",
+ " (retried OK → {0})": " (Kuyesanso kwapambana → {0})",
  " (this session only watches; another session on this machine schedules)": " (seshoni iyi imangoyang'ana; seshoni ina pa kompyuta iyi ndi imene imakonza)",
  " · gate on (review by {0})": " · chipata chotseguka (kuwunika ndi {0})",
+ " · retried OK → {0}": " · Kuyesanso kwapambana → {0}",
  " · review by {0}": " · kuwunika ndi {0}",
  " · test {0}": " · mayeso {0}",
  "(end)": "(kumapeto)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Yakanidwa {0}; nthambi {1} yasungidwa kuti iyang'anidwepo",
  "Result": "Zotsatira",
  "Result:": "Zotsatira:",
+ "Retried OK → {0}": "Kuyesanso kwapambana → {0}",
+ "Retried OK: {0} ›": "Kuyesanso kwapambana: {0} ›",
  "Review": "Kuwunika",
  "Review: approved ({0})": "Kuwunika: kuvomereza ({0})",
  "Review: rejected ({0})": "Kuwunika: kukana ({0})",

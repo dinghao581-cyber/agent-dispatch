@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (Neue Aufträge starten nur in der Nebenzeit)",
+ " (retried OK → {0})": " (Wiederholung erfolgreich → {0})",
  " (this session only watches; another session on this machine schedules)": " (Diese Sitzung schaut nur zu; eine andere Sitzung auf diesem Rechner plant die Aufträge)",
  " · gate on (review by {0})": " · Merge-Gate an (Prüfung durch {0})",
+ " · retried OK → {0}": " · Wiederholung erfolgreich → {0}",
  " · review by {0}": " · Prüfung durch {0}",
  " · test {0}": " · Test {0}",
  "(end)": "(Ende)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "{0} abgelehnt; Branch {1} zur Einsicht behalten",
  "Result": "Ergebnis",
  "Result:": "Ergebnis:",
+ "Retried OK → {0}": "Wiederholung erfolgreich → {0}",
+ "Retried OK: {0} ›": "Wiederholung erfolgreich: {0} ›",
  "Review": "Zu prüfen",
  "Review: approved ({0})": "Prüfung: freigegeben ({0})",
  "Review: rejected ({0})": "Prüfung: abgelehnt ({0})",

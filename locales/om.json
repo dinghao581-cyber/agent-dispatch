@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (hojiin haaraan yeroo gadi aanaa qofa jalqaba)",
+ " (retried OK → {0})": " (Irra deebi'ee milkaa'e → {0})",
  " (this session only watches; another session on this machine schedules)": " (seeshiinii kun ilaala qofa; kompiitara kana irratti seeshiinii biraa karoorfata)",
  " · gate on (review by {0})": " · balballi banaa (gamaaggama {0})",
+ " · retried OK → {0}": " · Irra deebi'ee milkaa'e → {0}",
  " · review by {0}": " · gamaaggama {0}",
  " · test {0}": " · qorannoo {0}",
  "(end)": "(dhuma)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "{0} kutame; dameen {1} wabeeffannoodhaaf hafe",
  "Result": "Bu'aa",
  "Result:": "Bu'aa:",
+ "Retried OK → {0}": "Irra deebi'ee milkaa'e → {0}",
+ "Retried OK: {0} ›": "Irra deebi'ee milkaa'e: {0} ›",
  "Review": "Gamaaggama",
  "Review: approved ({0})": "Gamaaggama: mirkanaa'e ({0})",
  "Review: rejected ({0})": "Gamaaggama: kutame ({0})",

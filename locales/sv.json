@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (nya uppgifter startar endast utanför högtrafik)",
+ " (retried OK → {0})": " (Nytt försök lyckades → {0})",
  " (this session only watches; another session on this machine schedules)": " (den här sessionen tittar bara på; en annan session på den här datorn schemalägger)",
  " · gate on (review by {0})": " · grind på (granskas av {0})",
+ " · retried OK → {0}": " · Nytt försök lyckades → {0}",
  " · review by {0}": " · granskas av {0}",
  " · test {0}": " · test {0}",
  "(end)": "(slut)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Avslog {0}; gren {1} behålls för referens",
  "Result": "Resultat",
  "Result:": "Resultat:",
+ "Retried OK → {0}": "Nytt försök lyckades → {0}",
+ "Retried OK: {0} ›": "Nytt försök lyckades: {0} ›",
  "Review": "Granskning",
  "Review: approved ({0})": "Granskning: godkänd ({0})",
  "Review: rejected ({0})": "Granskning: avslagen ({0})",

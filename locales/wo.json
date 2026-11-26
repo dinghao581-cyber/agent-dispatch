@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (liggéey yu bees di tàmbali ci waxtu wu wàññi rekk)",
+ " (retried OK → {0})": " (Dellu nañu ko, baax na → {0})",
  " (this session only watches; another session on this machine schedules)": " (sesio bii dafay xool rekk; weneen sesio ci kompiitara bii moo di doxal)",
  " · gate on (review by {0})": " · pal bi ubbi (xoolaat: {0})",
+ " · retried OK → {0}": " · Dellu nañu ko, baax na → {0}",
  " · review by {0}": " · xoolaat: {0}",
  " · test {0}": " · test {0}",
  "(end)": "(jeex)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Bañ nañu {0}; branch {1} denc nañu ngir xool",
  "Result": "Resultat",
  "Result:": "Resultat:",
+ "Retried OK → {0}": "Dellu nañu ko, baax na → {0}",
+ "Retried OK: {0} ›": "Dellu nañu ko, baax na: {0} ›",
  "Review": "Xoolaat",
  "Review: approved ({0})": "Xoolaat: dëggal nañu ({0})",
  "Review: rejected ({0})": "Xoolaat: bañ nañu ({0})",

@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (hawlaha cusub waxay bilaabmaan xilliga fudud oo keliya)",
+ " (retried OK → {0})": " (Dib u orod oo guuleystay → {0})",
  " (this session only watches; another session on this machine schedules)": " (kulankan waa daawasho oo keliya; kulan kale oo mashiinkan ah ayaa jadwalka maamula)",
  " · gate on (review by {0})": " · irid furan (dib u eegis {0})",
+ " · retried OK → {0}": " · Dib u orod oo guuleystay → {0}",
  " · review by {0}": " · dib u eegis {0}",
  " · test {0}": " · tijaabo {0}",
  "(end)": "(dhammaad)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "La diiday {0}; laanta {1} waa la hayay tixraac ahaan",
  "Result": "Natiijo",
  "Result:": "Natiijo:",
+ "Retried OK → {0}": "Dib u orod oo guuleystay → {0}",
+ "Retried OK: {0} ›": "Dib u orod oo guuleystay: {0} ›",
  "Review": "Dib u eegis",
  "Review: approved ({0})": "Dib u eegis: la aqbalay ({0})",
  "Review: rejected ({0})": "Dib u eegis: la diiday ({0})",

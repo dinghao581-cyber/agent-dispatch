@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": "（只在低谷开新单）",
+ " (retried OK → {0})": "（已重派成功 → {0}）",
  " (this session only watches; another session on this machine schedules)": "（本会话只旁观，调度由本机另一个会话负责）",
  " · gate on (review by {0})": " · 闸门开（验收交给 {0}）",
+ " · retried OK → {0}": " · 已重派成功 → {0}",
  " · review by {0}": " · 验收交给 {0}",
  " · test {0}": " · 测试 {0}",
  "(end)": "（已到末尾）",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "已驳回 {0}，分支 {1} 保留备查",
  "Result": "结果",
  "Result:": "结果：",
+ "Retried OK → {0}": "已重派成功 → {0}",
+ "Retried OK: {0} ›": "已重派成功：{0} ›",
  "Review": "待审",
  "Review: approved ({0})": "审查：批准（{0}）",
  "Review: rejected ({0})": "审查：驳回（{0}）",

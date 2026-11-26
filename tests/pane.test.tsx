@@ -1,4 +1,5 @@
 import { expect, test } from 'claude-code/testing'
+import { markRetried } from '../hooks/board'
 
 const PANE = {
   plugin: 'agent-dispatch',
@@ -201,4 +202,47 @@ test('输入框上方的状态栏能画出来并带打开按钮', async ($, on) 
     expect(await ui.find({ type: 'Text', text: /待审 1/ })).toBeDefined()
     await ui.unmount()
   }
+})
+
+test('重派成功的旧工单不算异常，归到完成栏', async ($, on) => {
+  const marked = markRetried([
+    row('T4', 'failed') as any,
+    row('T5', 'failed', { retryOf: 'T4' }) as any,
+    row('T6', 'done', { retryOf: 'T5' }) as any,
+    row('T7', 'failed') as any,
+    row('T8', 'failed', { retryOf: 'T7' }) as any,
+  ])
+  expect(marked.find(r => r.id === 'T4')?.retriedBy).toBe('T6')
+  expect(marked.find(r => r.id === 'T5')?.retriedBy).toBe('T6')
+  expect(marked.find(r => r.id === 'T7')?.retriedBy).toBeUndefined()
+  expect(marked.find(r => r.id === 'T8')?.retriedBy).toBeUndefined()
+})
+
+const RETRY_ROWS = [row('T4', 'failed', { retriedBy: 'T6' }), row('T6', 'done', { retryOf: 'T4', endedAt: now }), row('T7', 'failed')]
+
+function seedRetry(on: any, tab: string) {
+  on('state.get', (_: unknown, e: any) => {
+    const by: Record<string, unknown> = {
+      snapshot: { shape: 'snap-1', value: { ...SNAPSHOT, lang: 'zh-Hans', rows: RETRY_ROWS, counts: { retried: 1, done: 1, failed: 1 } } },
+      view: { shape: 'view-1', value: { tab, page: 0 } },
+      detail: { shape: 'detail-1', value: null },
+    }
+    return { value: { value: by[e.key], version: 1 } }
+  })
+}
+
+test('异常栏不显示重派成功的旧工单', async ($, on) => {
+  seedRetry(on, 'failed')
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /测试工单 T7/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /测试工单 T4/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('完成栏显示“已重派成功”', async ($, on) => {
+  seedRetry(on, 'done')
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /测试工单 T4/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /已重派成功 → T6/ })).toBeDefined()
+  await ui.unmount()
 })

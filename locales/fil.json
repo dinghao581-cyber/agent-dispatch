@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (mga bagong gawain ay nagsisimula lamang sa off-peak)",
+ " (retried OK → {0})": " (Muling pagtakbo OK → {0})",
  " (this session only watches; another session on this machine schedules)": " (nanonood lamang ang sesyong ito; ang isa pang sesyon sa makinang ito ang nag-iskedyul)",
  " · gate on (review by {0})": " · bukas ang gate (pagsusuri ni {0})",
+ " · retried OK → {0}": " · Muling pagtakbo OK → {0}",
  " · review by {0}": " · pagsusuri ni {0}",
  " · test {0}": " · pagsubok {0}",
  "(end)": "(wakas)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Tinanggihan ang {0}; itinago ang sangay {1} para sa sanggunian",
  "Result": "Resulta",
  "Result:": "Resulta:",
+ "Retried OK → {0}": "Muling pagtakbo OK → {0}",
+ "Retried OK: {0} ›": "Muling pagtakbo OK: {0} ›",
  "Review": "Pagsusuri",
  "Review: approved ({0})": "Pagsusuri: naaprubahan ({0})",
  "Review: rejected ({0})": "Pagsusuri: tinanggihan ({0})",

@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (নতুন কাজ শুধু অফ-পিক সময়ে শুরু হয়)",
+ " (retried OK → {0})": " (আবার সফল → {0})",
  " (this session only watches; another session on this machine schedules)": " (এই সেশন শুধু দেখছে; এই মেশিনের অন্য একটি সেশন শিডিউল করছে)",
  " · gate on (review by {0})": " · গেট চালু (পর্যালোচনা: {0})",
+ " · retried OK → {0}": " · আবার সফল → {0}",
  " · review by {0}": " · পর্যালোচনা: {0}",
  " · test {0}": " · পরীক্ষা {0}",
  "(end)": "(শেষ)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "{0} প্রত্যাখ্যাত; ব্রাঞ্চ {1} রেফারেন্সের জন্য রাখা হয়েছে",
  "Result": "ফলাফল",
  "Result:": "ফলাফল:",
+ "Retried OK → {0}": "আবার সফল → {0}",
+ "Retried OK: {0} ›": "আবার সফল: {0} ›",
  "Review": "পর্যালোচনা",
  "Review: approved ({0})": "পর্যালোচনা: অনুমোদিত ({0})",
  "Review: rejected ({0})": "পর্যালোচনা: প্রত্যাখ্যাত ({0})",

@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (kazi mpya huanza nje ya kilele tu)",
+ " (retried OK → {0})": " (Jaribio jipya limefanikiwa → {0})",
  " (this session only watches; another session on this machine schedules)": " (kikao hiki kinaangalia tu; upangaji unafanywa na kikao kingine kwenye kompyuta hii)",
  " · gate on (review by {0})": " · lango limewashwa (ukaguzi na {0})",
+ " · retried OK → {0}": " · Jaribio jipya limefanikiwa → {0}",
  " · review by {0}": " · ukaguzi na {0}",
  " · test {0}": " · jaribio {0}",
  "(end)": "(mwisho)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Imekataliwa {0}; tawi {1} limehifadhiwa kwa marejeleo",
  "Result": "Matokeo",
  "Result:": "Matokeo:",
+ "Retried OK → {0}": "Jaribio jipya limefanikiwa → {0}",
+ "Retried OK: {0} ›": "Jaribio jipya limefanikiwa: {0} ›",
  "Review": "Ukaguzi",
  "Review: approved ({0})": "Ukaguzi: imeidhinishwa ({0})",
  "Review: rejected ({0})": "Ukaguzi: imekataliwa ({0})",

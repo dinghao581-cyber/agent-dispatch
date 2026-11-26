@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (新規タスクはオフピーク時のみ開始します)",
+ " (retried OK → {0})": " （再実行成功 → {0}）",
  " (this session only watches; another session on this machine schedules)": " (このセッションは監視のみです。スケジュールはこのマシンの別セッションが行います)",
  " · gate on (review by {0})": " · ゲート有効（レビュー：{0}）",
+ " · retried OK → {0}": " · 再実行成功 → {0}",
  " · review by {0}": " · レビュー：{0}",
  " · test {0}": " · テスト {0}",
  "(end)": "（末尾）",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "{0} を却下しました。ブランチ {1} は参照用に保持しています",
  "Result": "結果",
  "Result:": "結果：",
+ "Retried OK → {0}": "再実行成功 → {0}",
+ "Retried OK: {0} ›": "再実行成功：{0} ›",
  "Review": "レビュー",
  "Review: approved ({0})": "レビュー：承認（{0}）",
  "Review: rejected ({0})": "レビュー：却下（{0}）",

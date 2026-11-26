@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (novas tarefas só começam fora do pico)",
+ " (retried OK → {0})": " (Nova tentativa bem-sucedida → {0})",
  " (this session only watches; another session on this machine schedules)": " (esta sessão só observa; outra sessão neste computador agenda)",
  " · gate on (review by {0})": " · portão ligado (revisor: {0})",
+ " · retried OK → {0}": " · Nova tentativa bem-sucedida → {0}",
  " · review by {0}": " · revisor: {0}",
  " · test {0}": " · teste {0}",
  "(end)": "(fim)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Tarefa {0} rejeitada; branch {1} mantido para referência",
  "Result": "Resultado",
  "Result:": "Resultado:",
+ "Retried OK → {0}": "Nova tentativa bem-sucedida → {0}",
+ "Retried OK: {0} ›": "Nova tentativa bem-sucedida: {0} ›",
  "Review": "Revisão",
  "Review: approved ({0})": "Revisão: aprovada ({0})",
  "Review: rejected ({0})": "Revisão: rejeitada ({0})",

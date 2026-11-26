@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (iṣẹ́ tuntun máa ń bẹ̀rẹ̀ ní àkókò pẹ̀lẹ́ nìkan)",
+ " (retried OK → {0})": " (Tún ṣe, ó ṣàṣeyọrí → {0})",
  " (this session only watches; another session on this machine schedules)": " (ẹ̀yà yìí kàn ń wo; ẹ̀yà mìíràn lórí ẹ̀rọ yìí ni ń ṣètò)",
  " · gate on (review by {0})": " · ẹnubodè ṣí (àyẹ̀wò lọ́wọ́ {0})",
+ " · retried OK → {0}": " · Tún ṣe, ó ṣàṣeyọrí → {0}",
  " · review by {0}": " · àyẹ̀wò lọ́wọ́ {0}",
  " · test {0}": " · ìdánwò {0}",
  "(end)": "(òpin)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "A kọ̀ {0}; a pa ẹ̀ka {1} mọ́ fún ìtọ́kasí",
  "Result": "Èsì",
  "Result:": "Èsì:",
+ "Retried OK → {0}": "Tún ṣe, ó ṣàṣeyọrí → {0}",
+ "Retried OK: {0} ›": "Tún ṣe, ó ṣàṣeyọrí: {0} ›",
  "Review": "Àyẹ̀wò",
  "Review: approved ({0})": "Àyẹ̀wò: fọwọ́ sí ({0})",
  "Review: rejected ({0})": "Àyẹ̀wò: kọ̀ ({0})",

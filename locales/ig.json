@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (ọrụ ọhụrụ na-amalite naanị n'oge dị ala)",
+ " (retried OK → {0})": " (Nwara ọzọ nke ọma → {0})",
  " (this session only watches; another session on this machine schedules)": " (nnọkọ a na-ekiri naanị; nnọkọ ọzọ n'igwe a na-ahazi)",
  " · gate on (review by {0})": " · ọnụ ụzọ mepere (nyocha site n'aka {0})",
+ " · retried OK → {0}": " · Nwara ọzọ nke ọma → {0}",
  " · review by {0}": " · nyocha site n'aka {0}",
  " · test {0}": " · nnwale {0}",
  "(end)": "(ngwụcha)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Ajụrụ {0}; ederebe alaka {1} maka ntụle",
  "Result": "Nsonaazụ",
  "Result:": "Nsonaazụ:",
+ "Retried OK → {0}": "Nwara ọzọ nke ọma → {0}",
+ "Retried OK: {0} ›": "Nwara ọzọ nke ọma: {0} ›",
  "Review": "Nyocha",
  "Review: approved ({0})": "Nyocha: ekwadoro ({0})",
  "Review: rejected ({0})": "Nyocha: ajụrụ ({0})",

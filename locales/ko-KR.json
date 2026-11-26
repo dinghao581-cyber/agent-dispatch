@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (새 작업은 비피크에만 시작)",
+ " (retried OK → {0})": " (재시도 성공 → {0})",
  " (this session only watches; another session on this machine schedules)": " (이 세션은 관찰만 하고, 이 컴퓨터의 다른 세션이 스케줄링합니다)",
  " · gate on (review by {0})": " · 게이트 켜짐 ({0} 검토)",
+ " · retried OK → {0}": " · 재시도 성공 → {0}",
  " · review by {0}": " · 검토: {0}",
  " · test {0}": " · 테스트 {0}",
  "(end)": "(끝)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "{0} 반려됨. 브랜치 {1} 참고용으로 유지",
  "Result": "결과",
  "Result:": "결과:",
+ "Retried OK → {0}": "재시도 성공 → {0}",
+ "Retried OK: {0} ›": "재시도 성공: {0} ›",
  "Review": "검토",
  "Review: approved ({0})": "검토: 승인 ({0})",
  "Review: rejected ({0})": "검토: 반려 ({0})",

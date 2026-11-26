@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (kun nye opgaver starter uden for spidsbelastning)",
+ " (retried OK → {0})": " (Nyt forsøg lykkedes → {0})",
  " (this session only watches; another session on this machine schedules)": " (denne session ser kun med; en anden session på denne maskine står for planlægningen)",
  " · gate on (review by {0})": " · acceptkontrol til (gennemgang af {0})",
+ " · retried OK → {0}": " · Nyt forsøg lykkedes → {0}",
  " · review by {0}": " · gennemgang af {0}",
  " · test {0}": " · test {0}",
  "(end)": "(slut)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Afviste {0}; branch {1} beholdt som reference",
  "Result": "Resultat",
  "Result:": "Resultat:",
+ "Retried OK → {0}": "Nyt forsøg lykkedes → {0}",
+ "Retried OK: {0} ›": "Nyt forsøg lykkedes: {0} ›",
  "Review": "Gennemgang",
  "Review: approved ({0})": "Gennemgang: godkendt ({0})",
  "Review: rejected ({0})": "Gennemgang: afvist ({0})",

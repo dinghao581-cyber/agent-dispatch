@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (งานใหม่เริ่มเฉพาะช่วงออฟพีก)",
+ " (retried OK → {0})": " (ลองใหม่สำเร็จ → {0})",
  " (this session only watches; another session on this machine schedules)": " (เซสชันนี้ดูอย่างเดียว อีกเซสชันบนเครื่องนี้เป็นตัวจัดคิว)",
  " · gate on (review by {0})": " · เปิดด่านตรวจรับ (ตรวจโดย {0})",
+ " · retried OK → {0}": " · ลองใหม่สำเร็จ → {0}",
  " · review by {0}": " · ตรวจโดย {0}",
  " · test {0}": " · ทดสอบ {0}",
  "(end)": "(สิ้นสุด)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "ปฏิเสธ {0} แล้ว เก็บสาขา {1} ไว้ดูภายหลัง",
  "Result": "ผลลัพธ์",
  "Result:": "ผลลัพธ์:",
+ "Retried OK → {0}": "ลองใหม่สำเร็จ → {0}",
+ "Retried OK: {0} ›": "ลองใหม่สำเร็จ: {0} ›",
  "Review": "รอตรวจ",
  "Review: approved ({0})": "ตรวจ: อนุมัติ ({0})",
  "Review: rejected ({0})": "ตรวจ: ปฏิเสธ ({0})",

@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (nieuwe taken starten alleen in de daluren)",
+ " (retried OK → {0})": " (Nieuwe poging geslaagd → {0})",
  " (this session only watches; another session on this machine schedules)": " (deze sessie kijkt alleen mee; een andere sessie op deze computer plant de taken in)",
  " · gate on (review by {0})": " · poort aan (beoordeling door {0})",
+ " · retried OK → {0}": " · Nieuwe poging geslaagd → {0}",
  " · review by {0}": " · beoordeling door {0}",
  " · test {0}": " · test {0}",
  "(end)": "(einde)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "{0} afgekeurd; branch {1} bewaard als referentie",
  "Result": "Resultaat",
  "Result:": "Resultaat:",
+ "Retried OK → {0}": "Nieuwe poging geslaagd → {0}",
+ "Retried OK: {0} ›": "Nieuwe poging geslaagd: {0} ›",
  "Review": "Te beoordelen",
  "Review: approved ({0})": "Beoordeling: goedgekeurd ({0})",
  "Review: rejected ({0})": "Beoordeling: afgekeurd ({0})",

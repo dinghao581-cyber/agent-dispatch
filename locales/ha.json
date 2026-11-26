@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (sabbin ayyuka suna farawa bayan kololuwa kawai)",
+ " (retried OK → {0})": " (An sake aikawa cikin nasara → {0})",
  " (this session only watches; another session on this machine schedules)": " (wannan zama yana kallo kawai; wani zama a wannan na'urar ne ke tsara ayyuka)",
  " · gate on (review by {0})": " · ƙofar a buɗe (bita ta {0})",
+ " · retried OK → {0}": " · An sake aikawa cikin nasara → {0}",
  " · review by {0}": " · bita ta {0}",
  " · test {0}": " · gwaji {0}",
  "(end)": "(ƙarshe)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "An ƙi {0}; an ajiye reshen {1} don tunani",
  "Result": "Sakamako",
  "Result:": "Sakamako:",
+ "Retried OK → {0}": "An sake aikawa cikin nasara → {0}",
+ "Retried OK: {0} ›": "An sake aikawa cikin nasara: {0} ›",
  "Review": "Bita",
  "Review: approved ({0})": "Bita: an yarda ({0})",
  "Review: rejected ({0})": "Bita: an ƙi ({0})",

@@ -1,7 +1,9 @@
 {
  " (new tasks start off-peak only)": " (las tareas nuevas solo empiezan fuera de punta)",
+ " (retried OK → {0})": " (Reintento correcto → {0})",
  " (this session only watches; another session on this machine schedules)": " (esta sesión solo observa; otra sesión de este equipo programa las tareas)",
  " · gate on (review by {0})": " · puerta activa (revisión de {0})",
+ " · retried OK → {0}": " · Reintento correcto → {0}",
  " · review by {0}": " · revisión de {0}",
  " · test {0}": " · prueba {0}",
  "(end)": "(fin)",
@@ -137,6 +139,8 @@
  "Rejected {0}; branch {1} kept for reference": "Rechazada {0}; rama {1} conservada como referencia",
  "Result": "Resultado",
  "Result:": "Resultado:",
+ "Retried OK → {0}": "Reintento correcto → {0}",
+ "Retried OK: {0} ›": "Reintento correcto: {0} ›",
  "Review": "Revisión",
  "Review: approved ({0})": "Revisión: aprobada ({0})",
  "Review: rejected ({0})": "Revisión: rechazada ({0})",

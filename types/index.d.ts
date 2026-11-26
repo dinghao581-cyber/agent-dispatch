@@ -80,6 +80,10 @@ export type Row = {
   costUSD: number
   summary?: string
   reviewTo: ReviewTo
+  /** 这张是哪张工单的重新派单（自动重派也指向原工单） */
+  retryOf?: string
+  /** 算出来的：它的某次重新派单已经完成，这张就不再算异常 */
+  retriedBy?: string
 }
 
 export type Settings = {
