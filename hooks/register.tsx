@@ -3,7 +3,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 import type { IO } from './util'
 import { detectHost } from './util'
-import { L, resolveLang, setLang } from './i18n'
+import { L, LANGUAGES, loadLocale, resolveLang } from './i18n'
 import { DEFAULT_SETTINGS, Dispatcher, detailText, rowLine } from './runner'
 import type { CreateInput } from './runner'
 import { PROVIDERS } from './providers'
@@ -19,7 +19,7 @@ const activeAtom = atom({ plugin: 'agent-dispatch', key: 'active' } as const, fa
 const detailAtom = atom({ plugin: 'agent-dispatch', key: 'detail' } as const, null as Detail | null, { shape: 'detail-1' })
 
 let disp: Dispatcher | undefined
-const FALLBACK_SETTINGS = DEFAULT_SETTINGS({ isWindows: false, home: '~', hostname: '', sessionId: '', pluginData: '' })
+const FALLBACK_SETTINGS = DEFAULT_SETTINGS({ isWindows: false, home: '~', hostname: '', sessionId: '', pluginData: '', pluginRoot: '' })
 let timer: { cancel: () => void } | undefined
 let io: IO | undefined
 // 重新加载后 session.start 要几秒才把派单器建好；这期间到来的工具调用先等它
@@ -32,7 +32,7 @@ async function startDispatcher(adapter: IO, cwd: string): Promise<Dispatcher> {
   const host = await detectHost(adapter)
   const saved = (await adapter.storeGet('settings')) as Partial<Settings> | undefined
   const settings = { ...DEFAULT_SETTINGS(host), ...(saved ?? {}) }
-  setLang(await resolveLang(adapter, host, settings.language))
+  await loadLocale(adapter, host.pluginRoot, await resolveLang(adapter, host, settings.language))
   const d = new Dispatcher(adapter, host, settings, cwd)
   await d.open()
   return d
@@ -189,7 +189,7 @@ export const register: Register = on => {
     await $.tool.register({
       name: 'dispatch_settings',
       description:
-        'Dispatcher settings: action=get to read, action=set to change, action=test to check the DeepSeek key (shows the balance). The key itself is entered by the user in the panel, never through this tool. Fields: language (auto/zh/en), mode (shared/local), sharedDir, localDir, maxConcurrent, offPeakOnly, defaultWorktree, defaultReviewTo (user/claude/agent/none), deepseekEnvFile, claudePath, machineName, hotDays, worktreeDir.',
+        'Dispatcher settings: action=get to read, action=set to change, action=test to check the DeepSeek key (shows the balance). The key itself is entered by the user in the panel, never through this tool. Fields: language (auto or a locale code such as zh-Hans, en-US, ja-JP), mode (shared/local), sharedDir, localDir, maxConcurrent, offPeakOnly, defaultWorktree, defaultReviewTo (user/claude/agent/none), deepseekEnvFile, claudePath, machineName, hotDays, worktreeDir.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -206,7 +206,7 @@ export const register: Register = on => {
           machineName: { type: 'string' },
           hotDays: { type: 'integer', minimum: 1, maximum: 30 },
           worktreeDir: { type: 'string', description: 'Folder for gate worktrees; must not be inside ~/.claude' },
-          language: { type: 'string', enum: ['auto', 'zh', 'en'] },
+          language: { type: 'string', enum: ['auto', ...LANGUAGES.map(l => l.code)] },
           showBand: { type: 'boolean' },
           autoOpen: { type: 'boolean' },
         },
@@ -278,20 +278,19 @@ export const register: Register = on => {
       try {
         const spec = await disp.create(one)
         lines.push(
-          `${spec.id} · ${spec.title} · ${spec.provider} · ${spec.mode === 'edit' ? L('可改文件', 'can edit') : L('只读', 'read only')}${spec.gate.worktree ? L(` · 闸门开（验收交给 ${spec.reviewTo}）`, ` · gate on (review by ${spec.reviewTo})`) : ''}`,
+          `${spec.id} · ${spec.title} · ${spec.provider} · ${spec.mode === 'edit' ? L('可改文件', 'can edit') : L('只读', 'read only')}${spec.gate.worktree ? L(' · 闸门开（验收交给 {0}）', ' · gate on (review by {0})', spec.reviewTo) : ''}`,
         )
       } catch (err) {
-        lines.push(L(`未创建「${one.title ?? '?'}」：`, `Not created "${one.title ?? '?'}": `) + (err instanceof Error ? err.message : String(err)))
+        lines.push(L('未创建「{0}」：', 'Not created "{0}": ', one.title ?? '?') + (err instanceof Error ? err.message : String(err)))
       }
     }
     const s = disp.snapshot()
     return ok(
-      L(`已派单 ${lines.filter(l => l.startsWith('T')).length} 张：`, `Created ${lines.filter(l => l.startsWith('T')).length} task(s):`) +
+      L('已派单 {0} 张：', 'Created {0} task(s):', lines.filter(l => l.startsWith('T')).length) +
         `\n${lines.join('\n')}\n\n` +
-        L(
-          `当前运行 ${s.running}/${s.maxConcurrent}${s.offPeakOnly && s.isPeak ? '；现在是 DeepSeek 高峰时段，排队到低谷再开' : ''}。进度看右侧面板，或用 dispatch_get。`,
-          `Running ${s.running}/${s.maxConcurrent}${s.offPeakOnly && s.isPeak ? '; DeepSeek peak hours now, queued until off-peak' : ''}. Watch the side panel or use dispatch_get.`,
-        ),
+        L('当前运行 {0}/{1}', 'Running {0}/{1}', s.running, s.maxConcurrent) +
+        (s.offPeakOnly && s.isPeak ? L('；现在是 DeepSeek 高峰时段，排队到低谷再开', '; DeepSeek peak hours now, queued until off-peak') : '') +
+        L('。进度看右侧面板，或用 dispatch_get。', '. Watch the side panel or use dispatch_get.'),
     )
   })
 
@@ -329,7 +328,7 @@ export const register: Register = on => {
     void disp.activate()
     const f = e as any
     const d = await disp.detail(String(f.id ?? ''))
-    if (!d) return fail(L(`找不到工单 ${f.id}`, `Task ${f.id} not found`))
+    if (!d) return fail(L('找不到工单 {0}', 'Task {0} not found', f.id))
     return ok(detailText(d, f.part ?? 'summary'))
   })
 
@@ -343,7 +342,7 @@ export const register: Register = on => {
     try {
       if (f.action === 'retry') {
         const spec = await disp.retry(id)
-        return ok(L(`已重新派单：${spec.id}`, `Created again as ${spec.id}`))
+        return ok(L('已重新派单：{0}', 'Created again as {0}', spec.id))
       }
       return ok(await disp.control(id, f.action, 'Claude', f.note))
     } catch (err) {
@@ -424,13 +423,15 @@ export const register: Register = on => {
         act(async () => {
           if (!disp) return L('派单器没有启动', 'The dispatcher is not running')
           const spec = await disp.retry(id)
-          return L(`已重新派单：${spec.id}`, `Created again as ${spec.id}`)
+          return L('已重新派单：{0}', 'Created again as {0}', spec.id)
         })(),
       refresh: () => void disp?.tick(),
       saveKey: value =>
         act(async () => (disp ? disp.saveDeepseekKey(value) : L('派单器没有启动', 'The dispatcher is not running')))(),
       testKey: () => act(async () => (disp ? disp.testDeepseek() : L('派单器没有启动', 'The dispatcher is not running')))(),
-      openSettings: () => void update($, viewAtom, (cur): View => ({ ...cur, screen: 'settings', selected: undefined })),
+      openSettings: () => void update($, viewAtom, (cur): View => ({ ...cur, screen: 'settings', selected: undefined, info: undefined })),
+      setSettingsTab: tab => void update($, viewAtom, (cur): View => ({ ...cur, settingsTab: tab, info: undefined })),
+      toggleInfo: key => void update($, viewAtom, (cur): View => ({ ...cur, info: cur.info === key ? undefined : key })),
       closeSettings: () => void update($, viewAtom, (cur): View => ({ ...cur, screen: 'list' })),
       setSetting: (key, value) =>
         act(async () => (await applySettings({ [key]: value } as Partial<Settings>)) ?? L('已保存', 'Saved'))(),
@@ -454,7 +455,7 @@ async function applySettings(patch: Partial<Settings>): Promise<string | undefin
     next.localDir !== disp.settings.localDir ||
     next.machineName !== disp.settings.machineName
   if (boardChanged && disp.runs.size > 0)
-    return L(`还有 ${disp.runs.size} 个智能体在运行，等它们结束或先停止，再切换任务板`, `${disp.runs.size} agent(s) still running; wait or stop them before switching boards`)
+    return L('还有 {0} 个智能体在运行，等它们结束或先停止，再切换任务板', '{0} agent(s) still running; wait or stop them before switching boards', disp.runs.size)
   if (boardChanged) {
     const fresh = new Dispatcher(io, disp.host, next, disp.sessionCwd)
     fresh.onSnapshot = disp.onSnapshot
@@ -462,7 +463,7 @@ async function applySettings(patch: Partial<Settings>): Promise<string | undefin
     try {
       await fresh.open()
     } catch (err) {
-      return L(`打不开任务板 ${fresh.boardDir}：`, `Cannot open board ${fresh.boardDir}: `) + (err instanceof Error ? err.message : String(err))
+      return L('打不开任务板 {0}：', 'Cannot open board {0}: ', fresh.boardDir) + (err instanceof Error ? err.message : String(err))
     }
     const wasActive = disp.active
     await disp.close()
@@ -472,7 +473,7 @@ async function applySettings(patch: Partial<Settings>): Promise<string | undefin
     disp.settings = next
   }
   await io.storeSet('settings', next)
-  if (patch.language !== undefined) setLang(await resolveLang(io, disp.host, next.language))
+  if (patch.language !== undefined) await loadLocale(io, disp.host.pluginRoot, await resolveLang(io, disp.host, next.language))
   void disp.tick()
   return undefined
 }

@@ -55,7 +55,7 @@ const SNAPSHOT = {
   refreshedAt: now,
 }
 
-function seed(on: any, view: unknown, detail: unknown = null, lang: 'zh' | 'en' = 'zh') {
+function seed(on: any, view: unknown, detail: unknown = null, lang = 'zh-Hans') {
   on('state.get', (_: unknown, e: any) => {
     const by: Record<string, unknown> = {
       snapshot: { shape: 'snap-1', value: { ...SNAPSHOT, lang } },
@@ -107,19 +107,64 @@ test('最小化成小组件时只显示一眼信息', async ($, on) => {
   await ui.unmount()
 })
 
-test('图形化设置页在桌面和终端都画得出来', async ($, on) => {
+test('设置页“常用”一页：语言、Key、并发、开关，说明默认收起', async ($, on) => {
   seed(on, { tab: 'active', page: 0, screen: 'settings' })
   for (const surface of ['desktop', 'terminal'] as const) {
     const ui = await $.ui.mount({ ...PANE, surface })
     expect(await ui.find({ type: 'Text', text: /同时运行上限/ })).toBeDefined()
-    expect(await ui.find({ key: 'sel-mode' })).toBeDefined()
-    expect(await ui.find({ key: 'in-sharedDir' })).toBeDefined()
+    expect(await ui.find({ key: 'sel-language' })).toBeDefined()
+    expect(await ui.find({ key: 'tg-offPeakOnly' })).toBeDefined()
+    expect(await ui.find({ key: 'info-offPeakOnly' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /低谷价是高峰的一半/ })).toBeUndefined()
+    expect(await ui.find({ key: 'sel-mode' })).toBeUndefined()
     await ui.unmount()
   }
 })
 
-test('切到英文后面板和设置页都是英文', async ($, on) => {
+test('点开 ⓘ 才显示说明', async ($, on) => {
+  seed(on, { tab: 'active', page: 0, screen: 'settings', info: 'offPeakOnly' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /低谷价是高峰的一半/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('设置页“任务板”一页：位置、目录、机器名', async ($, on) => {
+  seed(on, { tab: 'active', page: 0, screen: 'settings', settingsTab: 'board' })
+  for (const surface of ['desktop', 'terminal'] as const) {
+    const ui = await $.ui.mount({ ...PANE, surface })
+    expect(await ui.find({ key: 'sel-mode' })).toBeDefined()
+    expect(await ui.find({ key: 'in-localDir' })).toBeDefined()
+    expect(await ui.find({ key: 'in-machineName' })).toBeDefined()
+    await ui.unmount()
+  }
+})
+
+test('设置页“高级”一页：状态栏、归档、路径', async ($, on) => {
+  seed(on, { tab: 'active', page: 0, screen: 'settings', settingsTab: 'advanced' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ key: 'tg-showBand' })).toBeDefined()
+  expect(await ui.find({ key: 'sel-hotDays' })).toBeDefined()
+  expect(await ui.find({ key: 'in-claudePath' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('没有译文表的语言显示英文，不会显示中文', async ($, on) => {
+  seed(on, { tab: 'active', page: 0 }, null, 'ja-JP')
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /Dispatcher/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /低谷/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('旧设置值 en 仍当英文用', async ($, on) => {
   seed(on, { tab: 'active', page: 0 }, null, 'en')
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /Dispatcher/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('切到英文后面板和设置页都是英文', async ($, on) => {
+  seed(on, { tab: 'active', page: 0 }, null, 'en-US')
   for (const surface of ['desktop', 'terminal'] as const) {
     const ui = await $.ui.mount({ ...PANE, surface })
     expect(await ui.find({ type: 'Text', text: /Dispatcher/ })).toBeDefined()
@@ -130,7 +175,7 @@ test('切到英文后面板和设置页都是英文', async ($, on) => {
 })
 
 test('英文设置页有语言选项', async ($, on) => {
-  seed(on, { tab: 'active', page: 0, screen: 'settings' }, null, 'en')
+  seed(on, { tab: 'active', page: 0, screen: 'settings' }, null, 'en-US')
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect(await ui.find({ key: 'sel-language' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Max agents at once/ })).toBeDefined()

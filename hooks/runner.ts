@@ -1,6 +1,6 @@
 // 调度器：认领排队工单、启动智能体、跟踪进度、跑验收闸门、按设置把合并请求交给用户 / Claude / 审查智能体。
 import type { IO, Host, SpawnStream } from './util'
-import { L, getLang } from './i18n'
+import { L, Z, getLang } from './i18n'
 import {
   clip,
   dayKey,
@@ -151,7 +151,7 @@ export class Dispatcher {
       const byReload = closedAt < state.startedAt
       if (byReload && !spec.retryOf?.startsWith('auto:')) {
         const again = await this.retry(row.id, true)
-        this.pushEvent(state, L(`扩展重新加载打断了它，已自动重新派单：${again.id}`, `Interrupted by an extension reload; queued again as ${again.id}`))
+        this.pushEvent(state, L('扩展重新加载打断了它，已自动重新派单：{0}', 'Interrupted by an extension reload; queued again as {0}', again.id))
       } else {
         this.pushEvent(state, L('客户端关闭，智能体已随之停止', 'Client closed; the agent stopped with it'))
       }
@@ -184,7 +184,7 @@ export class Dispatcher {
     await this.refreshKeyStatus()
     void this.tick()
     const test = await testDeepseek(this.io, this.host, this.settings)
-    return L(`已保存 Key（${hint}）。${test}`, `Key saved (${hint}). ${test}`)
+    return L('已保存 Key（{0}）。{1}', 'Key saved ({0}). {1}', hint, test)
   }
 
   async testDeepseek(): Promise<string> {
@@ -326,7 +326,7 @@ export class Dispatcher {
       isError: false,
     }
     this.runs.set(spec.id, run)
-    this.pushEvent(state, L(`${this.machine} 认领，开始运行（${providerOf(spec.provider)?.label ?? spec.provider}）`, `Claimed by ${this.machine}, running (${providerOf(spec.provider)?.label ?? spec.provider})`))
+    this.pushEvent(state, L('{0} 认领，开始运行（{1}）', 'Claimed by {0}, running ({1})', this.machine, providerOf(spec.provider)?.label ?? spec.provider))
 
     let cwd = spec.cwd
     if (spec.gate.worktree) {
@@ -368,7 +368,7 @@ export class Dispatcher {
     } catch (err) {
       run.isError = true
       state.error = err instanceof Error ? err.message : String(err)
-      this.pushEvent(state, L(`启动失败：${clip(state.error, 200)}`, `Failed to start: ${clip(state.error, 200)}`))
+      this.pushEvent(state, L('启动失败：{0}', 'Failed to start: {0}', clip(state.error, 200)))
     }
 
     state.endedAt = Date.now()
@@ -381,7 +381,7 @@ export class Dispatcher {
     } else {
       state.summary = extractSummary(run.resultText)
       await this.board.writeResult(spec.id, run.resultText)
-      this.pushEvent(state, L(`智能体完成：${clip(state.summary, 120)}`, `Agent finished: ${clip(state.summary, 120)}`))
+      this.pushEvent(state, L('智能体完成：{0}', 'Agent finished: {0}', clip(state.summary, 120)))
       await this.afterAgent(run)
       return
     }
@@ -394,7 +394,7 @@ export class Dispatcher {
     if (!upd) return
     const st = run.state
     const prov = providerOf(run.spec.provider)
-    if (upd.initModel) this.pushEvent(st, L(`模型就绪：${upd.initModel}`, `Model ready: ${upd.initModel}`))
+    if (upd.initModel) this.pushEvent(st, L('模型就绪：{0}', 'Model ready: {0}', upd.initModel))
     if (upd.turnsDelta) st.turns += upd.turnsDelta
     if (upd.usageDelta) {
       st.usage.input += upd.usageDelta.input
@@ -432,7 +432,7 @@ export class Dispatcher {
     await this.board.flushHot()
     if (run.spec.reviewOf) await this.onReviewFinished(run)
     if (run.state.status === 'failed') {
-      void this.io.toast(L(`派单失败：${run.spec.title}`, `Task failed: ${run.spec.title}`))
+      void this.io.toast(L('派单失败：{0}', 'Task failed: {0}', run.spec.title))
     }
   }
 
@@ -459,13 +459,13 @@ export class Dispatcher {
     const wt = join(expandHome(this.settings.worktreeDir || '~/.agent-dispatch/worktrees', this.host), spec.id)
     const add = await this.git(['worktree', 'add', '-b', branch, wt, 'HEAD'], repoRoot)
     if (add.exitCode !== 0) {
-      state.error = L(`建 worktree 失败：${clip(add.stderr, 200)}`, `Could not create worktree: ${clip(add.stderr, 200)}`)
+      state.error = L('建 worktree 失败：{0}', 'Could not create worktree: {0}', clip(add.stderr, 200))
       this.pushEvent(state, state.error)
       return undefined
     }
     const rel = spec.cwd.replace(/\\/g, '/').slice(repoRoot.length).replace(/^\/+/, '')
     Object.assign(state, { worktree: wt, repoRoot, branch, baseBranch: base })
-    this.pushEvent(state, L(`独立 worktree：${branch}（基于 ${base}）`, `Own worktree: ${branch} (from ${base})`))
+    this.pushEvent(state, L('独立 worktree：{0}（基于 {1}）', 'Own worktree: {0} (from {1})', branch, base))
     return rel ? join(wt, rel) : wt
   }
 
@@ -482,7 +482,7 @@ export class Dispatcher {
     if (staged.exitCode === 1) {
       const email = (await this.git(['config', 'user.email'], state.worktree)).stdout.trim()
       const ident = email ? [] : ['-c', 'user.name=agent-dispatch', '-c', 'user.email=agent-dispatch@localhost']
-      await this.git([...ident, 'commit', '-m', L(`派单 ${spec.id}：${spec.title}`, `dispatch ${spec.id}: ${spec.title}`)], state.worktree)
+      await this.git([...ident, 'commit', '-m', L('派单 {0}：{1}', 'dispatch {0}: {1}', spec.id, spec.title)], state.worktree)
     }
     const ahead = await this.git(['rev-list', '--count', `${state.baseBranch}..${state.branch}`], state.repoRoot)
     if (ahead.stdout.trim() === '0') {
@@ -496,7 +496,7 @@ export class Dispatcher {
     }
     if (spec.gate.testCommand) {
       state.status = 'testing'
-      this.pushEvent(state, L(`验收测试：${spec.gate.testCommand}`, `Acceptance test: ${spec.gate.testCommand}`))
+      this.pushEvent(state, L('验收测试：{0}', 'Acceptance test: {0}', spec.gate.testCommand))
       await this.flushRun(run)
       let out = ''
       let code: number | null = 1
@@ -515,7 +515,7 @@ export class Dispatcher {
       }
       state.testTail = out
       state.testPassed = code === 0
-      this.pushEvent(state, state.testPassed ? L('测试通过', 'Tests passed') : L(`测试不通过（退出码 ${code}）`, `Tests failed (exit code ${code})`))
+      this.pushEvent(state, state.testPassed ? L('测试通过', 'Tests passed') : L('测试不通过（退出码 {0}）', 'Tests failed (exit code {0})', code))
       if (!state.testPassed) {
         state.status = 'failed'
         state.error = L('验收测试不通过', 'Acceptance tests failed')
@@ -531,15 +531,14 @@ export class Dispatcher {
     const to = spec.reviewTo
     if (to === 'none') {
       state.status = 'done'
-      this.pushEvent(state, L(`分支 ${state.branch} 已保留，未自动合并`, `Branch ${state.branch} kept, not merged`))
+      this.pushEvent(state, L('分支 {0} 已保留，未自动合并', 'Branch {0} kept, not merged', state.branch))
       await this.finish(run)
       return
     }
     state.status = 'review'
-    const msg = L(
-      `派单器：工单 ${spec.id}「${spec.title}」已完成${spec.gate.testCommand ? '并通过测试' : ''}，等待验收合并（分支 ${state.branch}）。`,
-      `Dispatcher: task ${spec.id} "${spec.title}" is done${spec.gate.testCommand ? ' and passed its tests' : ''}; waiting for review to merge (branch ${state.branch}).`,
-    )
+    const msg = spec.gate.testCommand
+      ? L('派单器：工单 {0}「{1}」已完成并通过测试，等待验收合并（分支 {2}）。', 'Dispatcher: task {0} "{1}" is done and passed its tests; waiting for review to merge (branch {2}).', spec.id, spec.title, state.branch)
+      : L('派单器：工单 {0}「{1}」已完成，等待验收合并（分支 {2}）。', 'Dispatcher: task {0} "{1}" is done; waiting for review to merge (branch {2}).', spec.id, spec.title, state.branch)
     if (to === 'user') {
       this.pushEvent(state, L('等待用户验收', 'Waiting for your review'))
       if (this.settings.autoOpen) this.io.openPane()
@@ -548,7 +547,7 @@ export class Dispatcher {
     } else if (to === 'claude') {
       this.pushEvent(state, L('已交给 Claude 验收', 'Handed to Claude for review'))
       void this.io.submit(
-        `${msg}\n${L(`请用 dispatch_get 查看结果与改动，然后用 dispatch_control 批准（approve，会合并进 ${state.baseBranch}）或驳回（reject）。`, `Use dispatch_get to read the result and changes, then dispatch_control to approve (merges into ${state.baseBranch}) or reject.`)}`,
+        `${msg}\n${L('请用 dispatch_get 查看结果与改动，然后用 dispatch_control 批准（approve，会合并进 {0}）或驳回（reject）。', 'Use dispatch_get to read the result and changes, then dispatch_control to approve (merges into {0}) or reject.', state.baseBranch)}`,
       )
     } else if (to === 'agent') {
       this.pushEvent(state, L('已交给审查智能体', 'Handed to a reviewer agent'))
@@ -562,14 +561,14 @@ export class Dispatcher {
   async spawnReviewer(spec: TaskSpec, state: TaskState): Promise<void> {
     const diff = await this.git(['diff', `${state.baseBranch}...${state.branch}`], state.repoRoot!)
     const prompt = [
-      L(
+      Z(
         '你是代码审查员。请审查下面这次改动是否正确完成了任务，是否引入明显错误或越界修改。只读，不要修改文件。',
         'You are a code reviewer. Check whether the change below correctly completes the task and whether it introduces obvious bugs or out-of-scope edits. Read only; do not modify files.',
       ),
-      `${L('## 原任务', '## Original task')}\n${spec.prompt}`,
-      state.testTail ? `${L('## 测试输出（尾部）', '## Test output (tail)')}\n\`\`\`\n${tail(state.testTail, 4000)}\n\`\`\`` : '',
-      `${L('## 改动', '## Changes')} (git diff ${state.baseBranch}...${state.branch})\n\`\`\`diff\n${tail(diff.stdout, 60000)}\n\`\`\``,
-      L(
+      `${Z('## 原任务', '## Original task')}\n${spec.prompt}`,
+      state.testTail ? `${Z('## 测试输出（尾部）', '## Test output (tail)')}\n\`\`\`\n${tail(state.testTail, 4000)}\n\`\`\`` : '',
+      `${Z('## 改动', '## Changes')} (git diff ${state.baseBranch}...${state.branch})\n\`\`\`diff\n${tail(diff.stdout, 60000)}\n\`\`\``,
+      Z(
         '审查完毕后，在最后单独写一行结论，格式必须是“【结论】通过”或“【结论】不通过：原因”。',
         'When done, end with a line of its own in exactly this form: "VERDICT: PASS" or "VERDICT: FAIL: reason".',
       ),
@@ -577,7 +576,7 @@ export class Dispatcher {
       .filter(Boolean)
       .join('\n\n')
     await this.create({
-      title: L(`审查：${spec.title}`, `Review: ${spec.title}`),
+      title: L('审查：{0}', 'Review: {0}', spec.title),
       prompt,
       provider: 'deepseek-flash',
       mode: 'read',
@@ -602,7 +601,7 @@ export class Dispatcher {
         await this.board.writeState(parent.state, parent.spec)
         await this.board.flushHot()
       }
-      void this.io.toast(L(`审查没有结论，请人工验收：${parentId}`, `No review verdict; please review ${parentId} yourself`))
+      void this.io.toast(L('审查没有结论，请人工验收：{0}', 'No review verdict; please review {0} yourself', parentId))
     }
   }
 
@@ -629,7 +628,7 @@ export class Dispatcher {
     const owner = state?.machine
     if (action === 'cancel' && !state) {
       const spec = await this.board.getSpec(id)
-      if (!spec) return L(`找不到工单 ${id}`, `Task ${id} not found`)
+      if (!spec) return L('找不到工单 {0}', 'Task {0} not found', id)
       await this.board.dequeue(id)
       const st: TaskState = {
         id,
@@ -641,18 +640,18 @@ export class Dispatcher {
         turns: 0,
         usage: { input: 0, cacheRead: 0, output: 0 },
         costUSD: 0,
-        events: [{ t: Date.now(), text: L(`${by} 取消了排队`, `${by} cancelled the queued task`) }],
+        events: [{ t: Date.now(), text: L('{0} 取消了排队', '{0} cancelled the queued task', by) }],
         logParts: 0,
       }
       await this.board.writeState(st, spec)
       await this.board.flushHot()
       void this.tick()
-      return L(`已取消排队中的工单 ${id}`, `Cancelled queued task ${id}`)
+      return L('已取消排队中的工单 {0}', 'Cancelled queued task {0}', id)
     }
-    if (!state) return L(`工单 ${id} 还没开始运行`, `Task ${id} has not started yet`)
+    if (!state) return L('工单 {0} 还没开始运行', 'Task {0} has not started yet', id)
     if (owner !== this.machine || !this.isOwner) {
       await this.board.sendControl(owner!, { id, action, note, by, at: Date.now() })
-      return L(`已把“${action}”请求发给 ${owner} 上的派单器`, `Sent "${action}" to the dispatcher on ${owner}`)
+      return L('已把“{0}”请求发给 {1} 上的派单器', 'Sent "{0}" to the dispatcher on {1}', action, owner)
     }
     return this.applyControl({ id, action, note, by, at: Date.now() })
   }
@@ -660,14 +659,14 @@ export class Dispatcher {
   async applyControl(c: Control): Promise<string> {
     if (c.action === 'stop' || c.action === 'cancel') {
       const run = this.runs.get(c.id)
-      if (!run) return L(`工单 ${c.id} 不在运行中`, `Task ${c.id} is not running`)
+      if (!run) return L('工单 {0} 不在运行中', 'Task {0} is not running', c.id)
       run.stopRequested = true
       try {
         await run.stream?.return({ code: null, signal: 'SIGTERM' })
       } catch {
         /* 已结束 */
       }
-      return L(`已停止 ${c.id}`, `Stopped ${c.id}`)
+      return L('已停止 {0}', 'Stopped {0}', c.id)
     }
     if (c.action === 'approve') return this.approve(c.id, c.by, c.note)
     if (c.action === 'reject') return this.reject(c.id, c.by, c.note)
@@ -676,53 +675,63 @@ export class Dispatcher {
 
   async approve(id: string, by: string, note?: string): Promise<string> {
     const owned = await this.loadOwned(id)
-    if (!owned) return L(`找不到工单 ${id}`, `Task ${id} not found`)
+    if (!owned) return L('找不到工单 {0}', 'Task {0} not found', id)
     const { spec, state } = owned
-    if (state.status !== 'review') return L(`工单 ${id} 当前状态是 ${state.status}，不在待审`, `Task ${id} is ${state.status}, not waiting for review`)
+    if (state.status !== 'review') return L('工单 {0} 当前状态是 {1}，不在待审', 'Task {0} is {1}, not waiting for review', id, state.status)
     const repo = state.repoRoot!
     const dirty = await this.git(['status', '--porcelain', '--untracked-files=no'], repo)
     if (dirty.stdout.trim()) {
-      this.pushEvent(state, L(`${by} 批准，但主工作区有未提交改动，暂不合并`, `Approved by ${by}, but the main checkout has uncommitted changes; not merged yet`))
+      this.pushEvent(state, L('{0} 批准，但主工作区有未提交改动，暂不合并', 'Approved by {0}, but the main checkout has uncommitted changes; not merged yet', by))
       await this.board.writeState(state, spec)
       await this.board.flushHot()
-      return L(`主工作区 ${repo} 有未提交改动，先提交或暂存后再批准`, `${repo} has uncommitted changes; commit or stash them, then approve again`)
+      return L('主工作区 {0} 有未提交改动，先提交或暂存后再批准', '{0} has uncommitted changes; commit or stash them, then approve again', repo)
     }
-    const merge = await this.git(['merge', '--no-ff', '-m', L(`合并派单 ${id}：${spec.title}`, `Merge dispatch ${id}: ${spec.title}`), state.branch!], repo)
+    const merge = await this.git(['merge', '--no-ff', '-m', L('合并派单 {0}：{1}', 'Merge dispatch {0}: {1}', id, spec.title), state.branch!], repo)
     if (merge.exitCode !== 0) {
       await this.git(['merge', '--abort'], repo)
-      this.pushEvent(state, L(`${by} 批准，但合并冲突，已放弃合并`, `Approved by ${by}, but the merge conflicted and was aborted`))
+      this.pushEvent(state, L('{0} 批准，但合并冲突，已放弃合并', 'Approved by {0}, but the merge conflicted and was aborted', by))
       await this.board.writeState(state, spec)
       await this.board.flushHot()
-      return L(`合并冲突，已放弃：${clip(merge.stdout + merge.stderr, 300)}`, `Merge conflict, aborted: ${clip(merge.stdout + merge.stderr, 300)}`)
+      return L('合并冲突，已放弃：{0}', 'Merge conflict, aborted: {0}', clip(merge.stdout + merge.stderr, 300))
     }
     state.review = { verdict: 'approved', by, at: Date.now(), note }
     state.status = 'done'
-    this.pushEvent(state, L(`${by} 批准，已合并进当前分支${note ? `：${clip(note, 100)}` : ''}`, `Approved by ${by}, merged into the current branch${note ? `: ${clip(note, 100)}` : ''}`))
+    this.pushEvent(
+      state,
+      note
+        ? L('{0} 批准，已合并进当前分支：{1}', 'Approved by {0}, merged into the current branch: {1}', by, clip(note, 100))
+        : L('{0} 批准，已合并进当前分支', 'Approved by {0}, merged into the current branch', by),
+    )
     await this.cleanupWorktree(state, true)
     await this.board.writeState(state, spec)
     await this.board.flushHot()
     void this.tick()
-    return L(`已批准并合并 ${id}`, `Approved and merged ${id}`)
+    return L('已批准并合并 {0}', 'Approved and merged {0}', id)
   }
 
   async reject(id: string, by: string, note?: string): Promise<string> {
     const owned = await this.loadOwned(id)
-    if (!owned) return L(`找不到工单 ${id}`, `Task ${id} not found`)
+    if (!owned) return L('找不到工单 {0}', 'Task {0} not found', id)
     const { spec, state } = owned
-    if (state.status !== 'review') return L(`工单 ${id} 当前状态是 ${state.status}，不在待审`, `Task ${id} is ${state.status}, not waiting for review`)
+    if (state.status !== 'review') return L('工单 {0} 当前状态是 {1}，不在待审', 'Task {0} is {1}, not waiting for review', id, state.status)
     state.review = { verdict: 'rejected', by, at: Date.now(), note }
     state.status = 'rejected'
-    this.pushEvent(state, L(`${by} 驳回${note ? `：${clip(note, 120)}` : ''}（分支 ${state.branch} 保留）`, `Rejected by ${by}${note ? `: ${clip(note, 120)}` : ''} (branch ${state.branch} kept)`))
+    this.pushEvent(
+      state,
+      note
+        ? L('{0} 驳回：{1}（分支 {2} 保留）', 'Rejected by {0}: {1} (branch {2} kept)', by, clip(note, 120), state.branch)
+        : L('{0} 驳回（分支 {1} 保留）', 'Rejected by {0} (branch {1} kept)', by, state.branch),
+    )
     await this.cleanupWorktree(state, false)
     await this.board.writeState(state, spec)
     await this.board.flushHot()
     void this.tick()
-    return L(`已驳回 ${id}，分支 ${state.branch} 保留备查`, `Rejected ${id}; branch ${state.branch} kept for reference`)
+    return L('已驳回 {0}，分支 {1} 保留备查', 'Rejected {0}; branch {1} kept for reference', id, state.branch)
   }
 
   async retry(id: string, auto = false): Promise<TaskSpec> {
     const spec = await this.board.getSpec(id)
-    if (!spec) throw new Error(L(`找不到工单 ${id}`, `Task ${id} not found`))
+    if (!spec) throw new Error(L('找不到工单 {0}', 'Task {0} not found', id))
     return this.create({
       title: spec.title,
       prompt: spec.prompt,
@@ -865,18 +874,15 @@ export class Dispatcher {
     const s = this.snapshot()
     const c = (k: string) => s.counts[k] ?? 0
     const lines = [
-      L(
-        `派单器 · ${s.machine} · ${s.mode === 'shared' ? `共享任务板 ${s.boardDir}` : `本机任务板 ${s.boardDir}`}${s.isOwner ? '' : '（本会话只旁观，调度由本机另一个会话负责）'}`,
-        `Dispatcher · ${s.machine} · ${s.mode === 'shared' ? `shared board ${s.boardDir}` : `local board ${s.boardDir}`}${s.isOwner ? '' : ' (this session only watches; another session on this machine schedules)'}`,
-      ),
-      L(
-        `运行 ${c('running') + c('testing')}/${s.maxConcurrent} · 排队 ${c('queued')} · 待审 ${c('review')} · 近 ${this.settings.hotDays} 天完成 ${c('done')} · 失败 ${c('failed')} · 中断 ${c('interrupted')}`,
-        `Running ${c('running') + c('testing')}/${s.maxConcurrent} · queued ${c('queued')} · review ${c('review')} · done (last ${this.settings.hotDays} days) ${c('done')} · failed ${c('failed')} · interrupted ${c('interrupted')}`,
-      ),
-      L(
-        `今日费用 ${fmtUSD(s.costToday)} · ${s.isPeak ? 'DeepSeek 高峰时段' : 'DeepSeek 低谷时段'}${s.offPeakOnly ? '（只在低谷开新单）' : ''}`,
-        `Cost today ${fmtUSD(s.costToday)} · ${s.isPeak ? 'DeepSeek peak hours' : 'DeepSeek off-peak'}${s.offPeakOnly ? ' (new tasks start off-peak only)' : ''}`,
-      ),
+      (s.mode === 'shared'
+        ? L('派单器 · {0} · 共享任务板 {1}', 'Dispatcher · {0} · shared board {1}', s.machine, s.boardDir)
+        : L('派单器 · {0} · 本机任务板 {1}', 'Dispatcher · {0} · local board {1}', s.machine, s.boardDir)) +
+        (s.isOwner ? '' : L('（本会话只旁观，调度由本机另一个会话负责）', ' (this session only watches; another session on this machine schedules)')),
+      L('运行 {0}/{1} · 排队 {2} · 待审 {3} · 近 {4} 天完成 {5} · 失败 {6} · 中断 {7}', 'Running {0}/{1} · queued {2} · review {3} · done (last {4} days) {5} · failed {6} · interrupted {7}', c('running') + c('testing'), s.maxConcurrent, c('queued'), c('review'), this.settings.hotDays, c('done'), c('failed'), c('interrupted')),
+      L('今日费用 {0}', 'Cost today {0}', fmtUSD(s.costToday)) +
+        ' · ' +
+        (s.isPeak ? L('DeepSeek 高峰时段', 'DeepSeek peak hours') : L('DeepSeek 低谷时段', 'DeepSeek off-peak')) +
+        (s.offPeakOnly ? L('（只在低谷开新单）', ' (new tasks start off-peak only)') : ''),
     ]
     const pick = (st: string[], n: number) => s.rows.filter(r => st.includes(r.status)).slice(0, n)
     const fmt = (r: Row) =>
@@ -885,36 +891,25 @@ export class Dispatcher {
     const attention = pick(['review', 'failed', 'interrupted'], 10)
     if (running.length) lines.push('', L('运行中：', 'Running:'), ...running.map(fmt))
     if (attention.length) lines.push('', L('需要处理：', 'Needs attention:'), ...attention.map(fmt))
-    if (s.error) lines.push('', L(`最近一次刷新出错：${s.error}`, `Last refresh failed: ${s.error}`))
+    if (s.error) lines.push('', L('最近一次刷新出错：{0}', 'Last refresh failed: {0}', s.error))
     lines.push('', L('更多用 dispatch_list 分页查询，单张详情用 dispatch_get。', 'Use dispatch_list for paged queries and dispatch_get for one task.'))
     return lines.join('\n')
   }
 }
 
 export function statusLabel(s: string): string {
-  const zh: Record<string, string> = {
-    queued: '排队',
-    running: '运行中',
-    testing: '测试中',
-    review: '待审',
-    done: '完成',
-    failed: '失败',
-    stopped: '已停止',
-    rejected: '已驳回',
-    interrupted: '中断',
+  const t: Record<string, () => string> = {
+    queued: () => L('排队', 'Queued'),
+    running: () => L('运行中', 'Running'),
+    testing: () => L('测试中', 'Testing'),
+    review: () => L('待审', 'Review'),
+    done: () => L('完成', 'Done'),
+    failed: () => L('失败', 'Failed'),
+    stopped: () => L('已停止', 'Stopped'),
+    rejected: () => L('已驳回', 'Rejected'),
+    interrupted: () => L('中断', 'Interrupted'),
   }
-  const en: Record<string, string> = {
-    queued: 'Queued',
-    running: 'Running',
-    testing: 'Testing',
-    review: 'Review',
-    done: 'Done',
-    failed: 'Failed',
-    stopped: 'Stopped',
-    rejected: 'Rejected',
-    interrupted: 'Interrupted',
-  }
-  return L(zh[s] ?? s, en[s] ?? s)
+  return t[s]?.() ?? s
 }
 
 /** 把 stream-json 原始日志转成人能读的几行 */
@@ -942,7 +937,7 @@ function humanLog(raw: string): string {
           }
         }
       } else if (ev.type === 'result') {
-        out.push(L(`✅ 结束：${ev.subtype ?? ''} · ${ev.num_turns ?? '?'} 轮`, `✅ Finished: ${ev.subtype ?? ''} · ${ev.num_turns ?? '?'} turns`))
+        out.push(L('✅ 结束：{0} · {1} 轮', '✅ Finished: {0} · {1} turns', ev.subtype ?? '', ev.num_turns ?? '?'))
       }
     } catch {
       /* 半行或非 JSON：跳过 */
@@ -958,13 +953,13 @@ export function rowLine(r: Row): string {
     r.title,
     providerOf(r.provider)?.short ?? r.provider,
     r.machine ? `@${r.machine}` : r.target !== 'any' ? `→${r.target}` : '',
-    r.turns ? L(`${r.turns}轮`, `${r.turns} turns`) : '',
+    r.turns ? L('{0}轮', '{0} turns', r.turns) : '',
     r.costUSD ? fmtUSD(r.costUSD) : '',
     r.startedAt
       ? r.endedAt
         ? fmtDuration(r.endedAt - r.startedAt)
-        : L(`已运行${fmtDuration(Date.now() - r.startedAt)}`, `running ${fmtDuration(Date.now() - r.startedAt)}`)
-      : L(`建于${fmtTime(r.createdAt)}`, `created ${fmtTime(r.createdAt)}`),
+        : L('已运行{0}', 'running {0}', fmtDuration(Date.now() - r.startedAt))
+      : L('建于{0}', 'created {0}', fmtTime(r.createdAt)),
     r.summary ? `${L('摘要：', 'Summary: ')}${clip(r.summary, 100)}` : '',
   ]
   return parts.filter(Boolean).join(' · ')
@@ -975,25 +970,24 @@ export function detailText(d: Detail, part: string): string {
   const head = [
     `${r.id} · ${statusLabel(r.status)} · ${r.title}`,
     L(
-      `智能体 ${providerOf(r.provider)?.label ?? r.provider} · 模式 ${d.mode === 'edit' ? '可改文件' : '只读'} · 机器 ${r.machine ?? '未认领'} · 目录 ${d.cwd}`,
-      `Agent ${providerOf(r.provider)?.label ?? r.provider} · mode ${d.mode === 'edit' ? 'can edit' : 'read only'} · machine ${r.machine ?? 'unclaimed'} · dir ${d.cwd}`,
+      '智能体 {0} · 模式 {1} · 机器 {2} · 目录 {3}',
+      'Agent {0} · mode {1} · machine {2} · dir {3}',
+      providerOf(r.provider)?.label ?? r.provider,
+      d.mode === 'edit' ? L('可改文件', 'can edit') : L('只读', 'read only'),
+      r.machine ?? L('未认领', 'unclaimed'),
+      d.cwd,
     ),
-    L(
-      `轮次 ${r.turns} · Token 输入 ${fmtTokens(d.usage.input)} / 缓存 ${fmtTokens(d.usage.cacheRead)} / 输出 ${fmtTokens(d.usage.output)} · 费用 ${fmtUSD(r.costUSD)}`,
-      `Turns ${r.turns} · tokens in ${fmtTokens(d.usage.input)} / cached ${fmtTokens(d.usage.cacheRead)} / out ${fmtTokens(d.usage.output)} · cost ${fmtUSD(r.costUSD)}`,
-    ),
+    L('轮次 {0} · Token 输入 {1} / 缓存 {2} / 输出 {3} · 费用 {4}', 'Turns {0} · tokens in {1} / cached {2} / out {3} · cost {4}', r.turns, fmtTokens(d.usage.input), fmtTokens(d.usage.cacheRead), fmtTokens(d.usage.output), fmtUSD(r.costUSD)),
     d.gate.worktree
-      ? L(
-          `验收闸门：独立分支 ${d.branch ?? '（待建）'}${d.gate.testCommand ? ` · 测试 ${d.gate.testCommand}` : ''} · 验收交给 ${r.reviewTo}`,
-          `Gate: branch ${d.branch ?? '(pending)'}${d.gate.testCommand ? ` · test ${d.gate.testCommand}` : ''} · review by ${r.reviewTo}`,
-        )
+      ? L('验收闸门：独立分支 {0}', 'Gate: branch {0}', d.branch ?? L('（待建）', '(pending)')) +
+        (d.gate.testCommand ? L(' · 测试 {0}', ' · test {0}', d.gate.testCommand) : '') +
+        L(' · 验收交给 {0}', ' · review by {0}', r.reviewTo)
       : L('验收闸门：关', 'Gate: off'),
     d.error ? `${L('错误：', 'Error: ')}${d.error}` : '',
     d.review
-      ? L(
-          `审查：${d.review.verdict === 'approved' ? '批准' : '驳回'}（${d.review.by}）${d.review.note ? ` ${clip(d.review.note, 200)}` : ''}`,
-          `Review: ${d.review.verdict === 'approved' ? 'approved' : 'rejected'} (${d.review.by})${d.review.note ? ` ${clip(d.review.note, 200)}` : ''}`,
-        )
+      ? (d.review.verdict === 'approved'
+          ? L('审查：批准（{0}）', 'Review: approved ({0})', d.review.by)
+          : L('审查：驳回（{0}）', 'Review: rejected ({0})', d.review.by)) + (d.review.note ? ` ${clip(d.review.note, 200)}` : '')
       : '',
   ].filter(Boolean)
   if (part === 'log') return [...head, '', L('日志尾部：', 'Log tail:'), d.logTail || L('（暂无）', '(none yet)')].join('\n')

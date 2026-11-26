@@ -4,14 +4,15 @@
 
 <img src="docs/panel.png" alt="派单器面板" width="420">
 
-*A Claude Code mod that dispatches background coding agents (DeepSeek today; GPT and Claude API slots reserved) from a sidebar panel. Claude can call it directly; tasks can live on a shared NAS board used by several machines. The UI is bilingual (中文 / English); English README section below.*
+*A Claude Code mod that dispatches background coding agents (DeepSeek today; GPT and Claude API slots reserved) from a sidebar panel. Claude can call it directly; tasks can live on a shared NAS board used by several machines. The UI comes in the same 43 languages as the Claude desktop app; English README section below.*
 
 ## 功能
 
 - **右侧面板**：进行中 / 排队 / 待审 / 完成 / 异常五栏；运行中的智能体显示实时动作和进度条；点开看摘要、进展时间线、最终结果、任务内容、输出日志和 Token 费用。最小化后变成一眼能看完的小组件。
 - **图形化设置页**：面板右上角“⚙ 设置”，任务板位置、并发数、低谷时段、验收闸门默认值、Key 文件路径都能直接改。
 - **随时找得到**：输入框上方一行状态栏（运行 / 排队 / 待审 + “打开面板”按钮），右键菜单里也有“打开派单器”；派单和有工单待审时自动打开面板。都可以在设置里关掉。
-- **中英双语**：设置里选“语言 / Language”：自动（跟随系统）、中文或 English。面板、设置页、Claude 工具的返回都会跟着切换。
+- **43 种语言**：和 Claude 桌面端一样多。设置 → 常用 → 语言：自动（跟随系统）或任选一种。面板、设置页、Claude 工具的返回都会跟着切换。简体中文和英文写在代码里，其余语言在 `locales/<语言代码>.json`（机器翻译，欢迎指正）。
+- **清爽的设置页**：分“常用 / 任务板 / 高级”三页；说明默认收起，点 ⓘ 展开；用不到的项自动隐藏。
 - **Claude 直接调用**：`dispatch_create`（支持批量）、`dispatch_overview`、`dispatch_list`、`dispatch_get`、`dispatch_control`、`dispatch_settings`。
 - **共享任务板**：多台电脑共用 NAS 上的同一个任务板，各自认领能做的工单；也可以只用本机。
 - **工单再多也不卡**：每张工单一个目录、每个文件只由一台电脑写入；面板和 Claude 只读精简的“热层”，结束超过几天的工单按月归档，按条件分页查询。
@@ -78,7 +79,11 @@ locks/<机器>.json                           每台电脑只让一个会话调�
 ```
 claude plugin validate .
 claude plugin test .
+node scripts/i18n.mjs extract   # 改了界面文字后重新生成 locales/_source.json
+node scripts/i18n.mjs check     # 检查各语言译文：缺句、占位符
 ```
+
+界面文字一律写成 `L('中文', 'English', ...值)`，值用 `{0}` `{1}` 占位；改了英文原句，其他语言就先显示英文，直到补上译文。
 
 ## English
 
@@ -88,7 +93,7 @@ claude plugin test .
 - Scales to thousands of tasks: a small "hot" index plus monthly archives, paged queries.
 - Optional acceptance gate: per-task git worktree, auto-commit, test command, then the merge request goes to you, to Claude, or to a reviewer agent.
 - Off-peak-only scheduling for DeepSeek's half-price hours; cost tracked from real token usage.
-- Bilingual UI: Settings → Language → Auto (follows the system), 中文 or English.
+- 43 UI languages, the same set as the Claude desktop app: Settings → General → Language → Auto (follows the system) or any of them. Translations other than Chinese and English are machine-made and live in `locales/<code>.json`.
 - Install with `/plugin install agent-dispatch --marketplace dinghao581-cyber/agent-dispatch`, open the panel (or type `/dispatch`), then ⚙ Settings → Agents: paste your DeepSeek API key, press Save and Test connection (it shows your balance). The key stays in a local file readable only by you.
 
 ## 许可证

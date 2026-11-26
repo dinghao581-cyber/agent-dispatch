@@ -96,8 +96,8 @@ export type Settings = {
   hotDays: number
   /** 验收闸门的 worktree 放哪；不能在 ~/.claude 下面（Claude Code 会把那里当敏感目录拦下修改） */
   worktreeDir: string
-  /** 界面语言：auto 跟随系统 */
-  language: 'auto' | 'zh' | 'en'
+  /** 界面语言：auto 跟随系统，或 43 种语言代码之一（zh-Hans、en-US、ja-JP…）；旧值 zh / en 仍认 */
+  language: string
   /** 输入框上方显示一行派单器状态和“打开”按钮 */
   showBand: boolean
   /** 派单、有工单待审时自动打开右侧面板 */
@@ -123,8 +123,8 @@ export type Snapshot = {
   keyHint?: string
   /** 本会话是否已接上界面、负责调度 */
   isActive: boolean
-  /** 当前界面语言；变了面板就重画 */
-  lang: 'zh' | 'en'
+  /** 当前界面语言代码；变了面板就重画 */
+  lang: string
   refreshedAt: number
 }
 
@@ -149,7 +149,18 @@ export type Detail = {
 
 export type Tab = 'active' | 'queued' | 'review' | 'done' | 'failed'
 
-export type View = { tab: Tab; page: number; selected?: string; screen?: 'list' | 'settings' }
+export type SettingsTab = 'basic' | 'board' | 'advanced'
+
+export type View = {
+  tab: Tab
+  page: number
+  selected?: string
+  screen?: 'list' | 'settings'
+  /** 设置页当前分页 */
+  settingsTab?: SettingsTab
+  /** 设置页里展开说明的那一项 */
+  info?: string
+}
 
 declare module 'claude-code' {
   interface PluginState {

@@ -1,5 +1,5 @@
 // 跨平台小工具：路径、删除文件、读 JSON、时间格式。
-import { getLang } from './i18n'
+import { L } from './i18n'
 // 模块里没有 Node，文件和进程操作都经由 register.tsx 在会话开始时建好的 IO 适配层。
 
 export type FsEntryLite = { name: string; kind: string; size: number; mtimeMs: number }
@@ -37,6 +37,8 @@ export type Host = {
   hostname: string
   sessionId: string
   pluginData: string
+  /** 插件自己的目录（读 locales/ 译文用） */
+  pluginRoot: string
 }
 
 export async function detectHost(io: IO): Promise<Host> {
@@ -53,6 +55,7 @@ export async function detectHost(io: IO): Promise<Host> {
     hostname: hostname.replace(/[^A-Za-z0-9_.-]/g, '-'),
     sessionId: env.CLAUDE_CODE_SESSION_ID ?? `s${Date.now()}`,
     pluginData: norm(env.CLAUDE_PLUGIN_DATA ?? ''),
+    pluginRoot: norm(env.CLAUDE_PLUGIN_ROOT ?? ''),
   }
 }
 
@@ -163,13 +166,12 @@ export function tail(text: string, maxChars: number): string {
 
 export function fmtDuration(ms: number): string {
   if (ms < 0) ms = 0
-  const zh = getLang() === 'zh'
   const s = Math.floor(ms / 1000)
-  if (s < 60) return zh ? `${s}秒` : `${s}s`
+  if (s < 60) return L('{0}秒', '{0}s', s)
   const m = Math.floor(s / 60)
-  if (m < 60) return zh ? `${m}分${s % 60 ? `${s % 60}秒` : ''}` : `${m}m${s % 60 ? ` ${s % 60}s` : ''}`
+  if (m < 60) return s % 60 ? L('{0}分{1}秒', '{0}m {1}s', m, s % 60) : L('{0}分', '{0}m', m)
   const h = Math.floor(m / 60)
-  return zh ? `${h}时${m % 60}分` : `${h}h ${m % 60}m`
+  return L('{0}时{1}分', '{0}h {1}m', h, m % 60)
 }
 
 export function fmtTime(ms: number): string {

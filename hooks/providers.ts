@@ -2,7 +2,7 @@
 // 目前只开 DeepSeek Flash；GPT 与 Claude API 留好位置，等有 Key 再打开。
 import type { IO, Host } from './util'
 import { expandHome } from './util'
-import { L, getLang } from './i18n'
+import { L, getLang, isZh, langName } from './i18n'
 import type { Settings } from '../types'
 
 export type Price = { hit: number; miss: number; out: number } // 美元 / 百万 Token（高峰价）
@@ -57,17 +57,16 @@ export const PROVIDERS: Provider[] = [
 /** 预留智能体的说明，按当前语言 */
 export function noteOf(p: Provider): string {
   if (p.enabled) return L('可用', 'available')
-  const zh: Record<string, string> = {
-    'deepseek-v4-pro': '已预留，按需打开',
-    'claude-api': '接口已预留：需要 ANTHROPIC_API_KEY',
-    'openai-gpt': '接口已预留：需要 OpenAI Key 和 Codex CLI',
+  switch (p.id) {
+    case 'deepseek-v4-pro':
+      return L('已预留，按需打开', 'reserved, enable when needed')
+    case 'claude-api':
+      return L('接口已预留：需要 ANTHROPIC_API_KEY', 'reserved: needs ANTHROPIC_API_KEY')
+    case 'openai-gpt':
+      return L('接口已预留：需要 OpenAI Key 和 Codex CLI', 'reserved: needs an OpenAI key and the Codex CLI')
+    default:
+      return p.note ?? L('未开放', 'not available')
   }
-  const en: Record<string, string> = {
-    'deepseek-v4-pro': 'reserved, enable when needed',
-    'claude-api': 'reserved: needs ANTHROPIC_API_KEY',
-    'openai-gpt': 'reserved: needs an OpenAI key and the Codex CLI',
-  }
-  return L(zh[p.id] ?? p.note ?? '未开放', en[p.id] ?? p.note ?? 'not available')
 }
 
 export function providerOf(id: string): Provider | undefined {
@@ -135,8 +134,8 @@ export async function checkProvider(
   id: string,
 ): Promise<string | undefined> {
   const p = providerOf(id)
-  if (!p) return L(`未知的智能体：${id}`, `Unknown agent: ${id}`)
-  if (!p.enabled) return L(`${p.label} 尚未开放（${noteOf(p)}）`, `${p.label} is not available yet (${noteOf(p)})`)
+  if (!p) return L('未知的智能体：{0}', 'Unknown agent: {0}', id)
+  if (!p.enabled) return L('{0} 尚未开放（{1}）', '{0} is not available yet ({1})', p.label, noteOf(p))
   if (id.startsWith('deepseek')) {
     const env = await readEnvFile(io, expandHome(settings.deepseekEnvFile, host))
     if (!env.DEEPSEEK_API_KEY)
@@ -186,10 +185,9 @@ export async function buildLaunch(
       CLAUDE_CODE_SUBAGENT_MODEL: model,
     })
   }
-  const input =
-    getLang() === 'zh'
-      ? `${spec.prompt}\n\n---\n完成后请在回答的最后单独写一行，以“【摘要】”开头，用一句话（不超过 80 字）总结结果。`
-      : `${spec.prompt}\n\n---\nWhen you are done, end your answer with a line of its own starting with "SUMMARY:" that sums up the result in one sentence (under 25 words).`
+  const input = isZh()
+    ? `${spec.prompt}\n\n---\n完成后请在回答的最后单独写一行，以“【摘要】”开头，用一句话（不超过 80 字）总结结果。`
+    : `${spec.prompt}\n\n---\nWhen you are done, end your answer with a line of its own starting with "SUMMARY:" that sums up the result in one sentence (under 25 words)${getLang() === 'en-US' ? '' : `, written in ${langName(getLang())}`}.`
   return { argv, env, input }
 }
 
@@ -323,17 +321,17 @@ export async function testDeepseek(io: IO, host: Host, settings: Settings): Prom
       headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' },
     })
   } catch (err) {
-    return L(`连不上 DeepSeek：${err instanceof Error ? err.message : String(err)}`, `Cannot reach DeepSeek: ${err instanceof Error ? err.message : String(err)}`)
+    return L('连不上 DeepSeek：{0}', 'Cannot reach DeepSeek: {0}', err instanceof Error ? err.message : String(err))
   }
   if (r.status === 401) return L('Key 无效或已被删除，请重新创建一个', 'The key is invalid or was deleted; create a new one')
-  if (!r.ok) return L(`DeepSeek 返回 ${r.status}`, `DeepSeek answered ${r.status}`)
+  if (!r.ok) return L('DeepSeek 返回 {0}', 'DeepSeek answered {0}', r.status)
   try {
     const data = JSON.parse(r.text) as { is_available?: boolean; balance_infos?: { currency?: string; total_balance?: string }[] }
     const infos = data.balance_infos ?? []
     const nonZero = infos.filter(b => Number(b.total_balance ?? 0) > 0)
     const bal = (nonZero.length ? nonZero : infos.slice(0, 1)).map(b => `${b.currency === 'CNY' ? '¥' : b.currency === 'USD' ? '$' : `${b.currency ?? ''} `}${b.total_balance ?? '?'}`).join(' / ')
-    if (data.is_available === false) return L(`Key 可用，但余额不足（${bal || '0'}），请先充值`, `The key works but the balance is too low (${bal || '0'}); top up first`)
-    return L(`连接成功 ✓ 余额 ${bal || '未知'}`, `Connected ✓ balance ${bal || 'unknown'}`)
+    if (data.is_available === false) return L('Key 可用，但余额不足（{0}），请先充值', 'The key works but the balance is too low ({0}); top up first', bal || '0')
+    return L('连接成功 ✓ 余额 {0}', 'Connected ✓ balance {0}', bal || L('未知', 'unknown'))
   } catch {
     return L('连接成功 ✓', 'Connected ✓')
   }
